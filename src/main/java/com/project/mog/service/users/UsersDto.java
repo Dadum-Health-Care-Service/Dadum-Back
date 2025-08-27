@@ -38,6 +38,8 @@ public class UsersDto {
 	private String profileImg;
 	@Schema(description = "phoneNum", example="01012345678")
 	private String phoneNum;
+	@Schema(description = "role", example="USER")
+	private String role;
 	private LocalDateTime regDate;
 	private LocalDateTime updateDate;
 	
@@ -49,6 +51,7 @@ public class UsersDto {
 					.email(email)
 					.profileImg(profileImg)
 					.phoneNum(phoneNum)
+					.role(role)
 					.regDate(regDate)
 					.updateDate(updateDate)
 					.bios(Optional.ofNullable(biosDto).map(BiosDto::toEntity).orElse(null))
@@ -76,6 +79,7 @@ public class UsersDto {
 				.email(uEntity.getEmail())
 				.profileImg(uEntity.getProfileImg())
 				.phoneNum(uEntity.getPhoneNum())
+				.role(uEntity.getRole())
 				.regDate(uEntity.getRegDate())
 				.updateDate(uEntity.getUpdateDate())
 				.biosDto(BiosDto.toDto(uEntity.getBios()))

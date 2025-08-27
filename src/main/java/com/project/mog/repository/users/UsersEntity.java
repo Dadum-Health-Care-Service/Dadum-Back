@@ -56,6 +56,9 @@ public class UsersEntity {
 	@Column(length=11,nullable=false)
 	private String phoneNum;
 	
+	@Column(length=20,nullable=false)
+	private String role;
+	
 	@Column(nullable=false,updatable = false)
 	private LocalDateTime regDate;
 	@Column(nullable=false)

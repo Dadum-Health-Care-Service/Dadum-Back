@@ -17,6 +17,8 @@ public class LoginResponse {
 	private Long usersId;
 	@Schema(description = "email",example="test@test.com")
 	private String email;
+	@Schema(description = "role",example="USER")
+	private String role;
 	private String accessToken;
 	private String refreshToken;
 }

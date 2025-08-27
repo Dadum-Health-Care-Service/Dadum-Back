@@ -95,6 +95,7 @@ public class UsersController implements UsersControllerDocs{
 		
 		long usersId = usersDto.getUsersId();
 		String email = usersDto.getEmail();
+		String role = usersDto.getRole();
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		
@@ -102,6 +103,7 @@ public class UsersController implements UsersControllerDocs{
 		LoginResponse loginResponse = LoginResponse.builder()
 											.usersId(usersId)
 											.email(email)
+											.role(role)
 											.accessToken(accessToken)
 											.refreshToken(refreshToken)
 											.build();
@@ -114,12 +116,14 @@ public class UsersController implements UsersControllerDocs{
 		UsersDto usersDto = usersService.socialLogin(request);
 		long usersId = usersDto.getUsersId();
 		String email = usersDto.getEmail();
+		String role = usersDto.getRole();
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		
 		LoginResponse loginResponse = LoginResponse.builder()
 										.usersId(usersId)
 										.email(email)
+										.role(role)
 										.accessToken(accessToken)
 										.refreshToken(refreshToken)
 										.build();
