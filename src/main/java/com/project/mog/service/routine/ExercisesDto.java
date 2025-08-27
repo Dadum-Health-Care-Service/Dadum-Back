@@ -4,8 +4,6 @@ import com.project.mog.repository.routine.ExercisesEntity;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @Getter
