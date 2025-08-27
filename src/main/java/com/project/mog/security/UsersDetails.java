@@ -19,8 +19,25 @@ public class UsersDetails implements UserDetails {
 	
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
+		String role = usersEntity.getRole();
 		
-		return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+		// 역할에 따른 권한 부여
+		switch (role) {
+			case "SUPER_ADMIN":
+				return List.of(
+					new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"),
+					new SimpleGrantedAuthority("ROLE_ADMIN"),
+					new SimpleGrantedAuthority("ROLE_USER")
+				);
+			case "ADMIN":
+				return List.of(
+					new SimpleGrantedAuthority("ROLE_ADMIN"),
+					new SimpleGrantedAuthority("ROLE_USER")
+				);
+			case "USER":
+			default:
+				return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+		}
 	}
 
 	@Override
