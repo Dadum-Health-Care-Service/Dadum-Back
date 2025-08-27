@@ -85,14 +85,19 @@ public class UsersService {
 			UsersEntity targetUser = usersRepository.findById(usersId)
 				.orElseThrow(() -> new RuntimeException("삭제할 사용자를 찾을 수 없습니다"));
 			
-			// 권한 검증: admin이거나 자기 자신인 경우만 삭제 가능
-			if (!currentUser.getRole().equals("ADMIN") && currentUser.getUsersId() != usersId) {
+			// 권한 검증: SUPER_ADMIN이거나 자기 자신인 경우만 삭제 가능
+			if (!currentUser.getRole().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
 				throw new AccessDeniedException("자기 자신만 삭제 가능합니다");
 			}
 			
-			// admin은 자기 자신을 삭제할 수 없음
-			if (currentUser.getRole().equals("ADMIN") && currentUser.getUsersId() == usersId) {
-				throw new AccessDeniedException("관리자는 자기 자신을 삭제할 수 없습니다");
+			// SUPER_ADMIN은 자기 자신을 삭제할 수 없음
+			if (currentUser.getRole().equals("SUPER_ADMIN") && currentUser.getUsersId() == usersId) {
+				throw new AccessDeniedException("최고 관리자는 자기 자신을 삭제할 수 없습니다");
+			}
+			
+			// ADMIN은 다른 ADMIN을 삭제할 수 없음
+			if (currentUser.getRole().equals("ADMIN") && targetUser.getRole().equals("ADMIN")) {
+				throw new AccessDeniedException("일반 관리자는 다른 관리자를 삭제할 수 없습니다");
 			}
 			
 			usersRepository.deleteById(usersId);
@@ -108,9 +113,22 @@ public class UsersService {
 			UsersEntity usersEntity = usersRepository.findById(usersId)
 				.orElseThrow(() -> new IllegalArgumentException(usersId + "가 존재하지 않습니다"));
 			
-			// 권한 검증: admin이거나 자기 자신인 경우만 수정 가능
-			if (!currentUser.getRole().equals("ADMIN") && currentUser.getUsersId() != usersId) {
+			// 권한 검증: SUPER_ADMIN이거나 자기 자신인 경우만 수정 가능
+			if (!currentUser.getRole().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
 				throw new AccessDeniedException("자기 자신만 수정 가능합니다");
+			}
+			
+			// 역할 변경 권한 검증
+			if (usersInfoDto.getRole() != null && !usersInfoDto.getRole().equals(usersEntity.getRole())) {
+				// SUPER_ADMIN만 역할을 변경할 수 있음
+				if (!currentUser.getRole().equals("SUPER_ADMIN")) {
+					throw new AccessDeniedException("역할 변경은 최고 관리자만 가능합니다");
+				}
+				
+				// SUPER_ADMIN은 다른 SUPER_ADMIN을 만들 수 없음
+				if (usersInfoDto.getRole().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
+					throw new AccessDeniedException("다른 사용자를 최고 관리자로 만들 수 없습니다");
+				}
 			}
 			
 			BiosEntity biosEntity = biosRepository.findByUser(usersEntity);

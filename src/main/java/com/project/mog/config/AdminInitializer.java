@@ -26,13 +26,13 @@ public class AdminInitializer implements CommandLineRunner {
             var existingAdmin = usersRepository.findByEmail("admin@mog.com");
             
             if (existingAdmin.isEmpty()) {
-                // admin 계정 생성
+                // admin 계정 생성 (SUPER_ADMIN 역할)
                 UsersEntity adminUser = UsersEntity.builder()
                         .usersName("관리자")
                         .nickName("admin")
                         .email("admin@mog.com")
                         .phoneNum("01000000000")
-                        .role("ADMIN")
+                        .role("SUPER_ADMIN")
                         .build();
 
                 // AuthEntity 생성 (비밀번호 설정 - 평문)
@@ -49,7 +49,15 @@ public class AdminInitializer implements CommandLineRunner {
                 // UsersEntity 저장
                 usersRepository.save(adminUser);
                 
-                log.info("Admin 계정이 생성되었습니다: admin@mog.com / admin1234");
+                log.info("Super Admin 계정이 생성되었습니다: admin@mog.com / admin1234");
+            } else {
+                // 기존 admin 계정을 SUPER_ADMIN으로 업데이트
+                UsersEntity existingUser = existingAdmin.get();
+                if (!"SUPER_ADMIN".equals(existingUser.getRole())) {
+                    existingUser.setRole("SUPER_ADMIN");
+                    usersRepository.save(existingUser);
+                    log.info("기존 admin 계정이 SUPER_ADMIN으로 업데이트되었습니다.");
+                }
             }
         } catch (Exception e) {
             log.error("Admin 계정 생성 중 오류 발생: {}", e.getMessage());
