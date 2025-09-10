@@ -1,6 +1,9 @@
 package com.project.mog.service.users;
 
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -10,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.mog.annotation.UserAuthorizationCheck;
 import com.project.mog.api.KakaoApiClient;
 import com.project.mog.controller.auth.EmailFindRequest;
@@ -23,6 +27,9 @@ import com.project.mog.repository.bios.BiosRepository;
 import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.repository.users.UsersRepository;
 import com.project.mog.service.bios.BiosDto;
+
+import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
@@ -36,7 +43,7 @@ public class UsersService {
 		
 		
 		
-		public UsersService(UsersRepository usersRepository, BiosRepository biosRepository,AuthRepository authRepository, KakaoApiClient kakaoApiClient, PasswordEncoder passwordEncoder ) {
+		public UsersService(UsersRepository usersRepository, BiosRepository biosRepository,AuthRepository authRepository, KakaoApiClient kakaoApiClient, PasswordEncoder passwordEncoder) {
 			this.usersRepository=usersRepository;
 			this.biosRepository=biosRepository;
 			this.authRepository=authRepository;
@@ -146,6 +153,8 @@ public class UsersService {
 			throw new IllegalArgumentException("올바르지 않은 아이디/비밀번호입니다");
 		}
 		
+		// 3. 패스워드리스 등록시
+		
 		return UsersDto.toDto(usersEntity);
 	}
 
@@ -200,6 +209,27 @@ public class UsersService {
 		public UsersInfoDto getUserByRequest(EmailFindRequest emailFindRequest) {
 			UsersEntity usersEntity = usersRepository.findByUsersNameAndPhoneNum(emailFindRequest.getUsersName(),emailFindRequest.getPhoneNum()).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 			return UsersInfoDto.toDto(usersEntity);
+		}
+
+
+		public UsersDto registerPasswordless(String authEmail, String passwordlessToken) throws JsonProcessingException, NoSuchAlgorithmException {
+			UsersEntity usersEntity = usersRepository.findByEmail(authEmail).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			AuthEntity authEntity = authRepository.findByUser(usersEntity);
+			
+			// 패스워드리스 등록 후 로그인 불가능하도록 해쉬화한 패스워드리스토큰을 비밀번호로 저장
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(passwordlessToken.getBytes(StandardCharsets.UTF_8));
+			StringBuilder sb = new StringBuilder();
+			for (byte b : hash) {
+			    sb.append(String.format("%02x", b));
+			}
+			String hexHash = sb.toString();
+			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+			String bcryptHash = encoder.encode(hexHash);
+			authEntity.setPassword(bcryptHash);
+			return UsersDto.toDto(usersEntity);
+			
+			
 		}
 
 
