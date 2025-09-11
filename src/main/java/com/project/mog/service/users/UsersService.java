@@ -148,12 +148,19 @@ public class UsersService {
 		UsersEntity usersEntity = usersRepository.findByEmail(request.getEmail())
 			.orElseThrow(() -> new IllegalArgumentException("올바르지 않은 아이디/비밀번호입니다"));
 		
-		// 2. 비밀번호 검증 (평문 비밀번호와 비교)
+		System.out.println(usersEntity.getAuth().isPasswordless());
+		
+		// 2. 패스워드리스 등록됐을 경우 반환
+		if(usersEntity.getAuth().isPasswordless()==true) {
+			throw new AccessDeniedException("패스워드리스로 등록된 계정입니다");
+		}
+		
+		// 3. 비밀번호 검증 (평문 비밀번호와 비교)
 		if (!request.getPassword().equals(usersEntity.getAuth().getPassword())) {
 			throw new IllegalArgumentException("올바르지 않은 아이디/비밀번호입니다");
 		}
 		
-		// 3. 패스워드리스 등록시
+		
 		
 		return UsersDto.toDto(usersEntity);
 	}
@@ -227,6 +234,7 @@ public class UsersService {
 			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 			String bcryptHash = encoder.encode(hexHash);
 			authEntity.setPassword(bcryptHash);
+			authEntity.setPasswordless(true);
 			return UsersDto.toDto(usersEntity);
 			
 			
