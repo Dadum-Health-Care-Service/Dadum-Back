@@ -1,5 +1,8 @@
-package com.project.mog.service;
+package com.project.mog.service.chatbot;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.mog.dto.ChatRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +21,7 @@ import java.util.Map;
 public class OpenAIClient {
 
     private final WebClient openaiWebClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${openai.api.key:}")
     private String apiKey;
@@ -28,28 +32,33 @@ public class OpenAIClient {
     @Value("${openai.api.timeout:30}")
     private int timeoutSeconds;
 
+    // OpenAI API 설정 상수
+    private static final String MODEL = "gpt-4o";
+    private static final double TEMPERATURE = 0.4; // 규칙 준수 향상을 위해 낮춤
+    private static final int MAX_TOKENS = 1000;
+    private static final String DONE_SIGNAL = "[DONE]";
+    private static final String API_KEY_ERROR_MESSAGE = "data: {\"error\": \"OpenAI API 키가 설정되지 않았습니다.\"}\n\n";
+    private static final String API_CALL_ERROR_MESSAGE = "data: {\"error\": \"OpenAI API 호출 중 오류가 발생했습니다.\"}\n\n";
+
     public boolean isApiKeyValid() {
         return apiKey != null && !apiKey.isEmpty() && !apiKey.equals("your-openai-api-key-here");
     }
 
-    public Flux<String> streamChatCompletion(com.project.mog.dto.ChatRequest chatRequest) {
-        log.info("OpenAI API 호출 시작 - 메시지: {}", chatRequest.getMessages());
+    public Flux<String> streamChatCompletion(ChatRequest chatRequest) {
+        log.info("OpenAI API 호출 시작 - 메시지 수: {}", chatRequest.getMessages().size());
         
         if (!isApiKeyValid()) {
             log.error("OpenAI API 키가 설정되지 않았습니다");
-            return Flux.just("data: {\"error\": \"OpenAI API 키가 설정되지 않았습니다.\"}\n\n");
+            return Flux.just(API_KEY_ERROR_MESSAGE);
         }
 
         Map<String, Object> requestBody = Map.of(
-            "model", "gpt-4o",
+            "model", MODEL,
             "messages", chatRequest.getMessages(),
             "stream", true,
-            "temperature", 0.7,
-            "max_tokens", 1000
+            "temperature", TEMPERATURE,
+            "max_tokens", MAX_TOKENS
         );
-
-        log.info("OpenAI API 요청 본문: {}", requestBody);
-        log.info("OpenAI API 키 확인: {}", apiKey.substring(0, 10) + "...");
         
         return openaiWebClient
                 .post()
@@ -59,55 +68,42 @@ public class OpenAIClient {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToFlux(String.class)
-                .doOnNext(chunk -> log.info("OpenAI 응답 청크: {}", chunk))
                 .map(this::extractContent)
-                .doOnNext(content -> log.info("추출된 내용: {}", content))
                 .filter(content -> !content.isEmpty())
                 .timeout(Duration.ofSeconds(timeoutSeconds))
                 .onErrorResume(error -> {
                     log.error("OpenAI API 호출 실패: {}", error.getMessage(), error);
-                    return Flux.just("data: {\"error\": \"OpenAI API 호출 중 오류가 발생했습니다.\"}\n\n");
+                    return Flux.just(API_CALL_ERROR_MESSAGE);
                 });
     }
 
+    /**
+     * OpenAI 응답에서 실제 콘텐츠 추출
+     */
     private String extractContent(String chunk) {
-        log.info("extractContent 입력: {}", chunk);
-        
         // [DONE] 체크
-        if (chunk.trim().equals("[DONE]")) {
-            log.info("DONE 신호 감지");
-            return "[DONE]";
+        if (DONE_SIGNAL.equals(chunk.trim())) {
+            return DONE_SIGNAL;
         }
 
         try {
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            com.fasterxml.jackson.databind.JsonNode jsonNode = mapper.readTree(chunk);
-            log.info("JSON 파싱 성공: {}", jsonNode);
-
+            JsonNode jsonNode = objectMapper.readTree(chunk);
+            
             if (jsonNode.has("choices") && jsonNode.get("choices").isArray() && jsonNode.get("choices").size() > 0) {
-                com.fasterxml.jackson.databind.JsonNode choice = jsonNode.get("choices").get(0);
-                log.info("choice: {}", choice);
+                JsonNode choice = jsonNode.get("choices").get(0);
                 
-                if (choice.has("delta")) {
-                    com.fasterxml.jackson.databind.JsonNode delta = choice.get("delta");
-                    log.info("delta: {}", delta);
+                if (choice.has("delta") && choice.get("delta").has("content")) {
+                    String content = choice.get("delta").get("content").asText();
                     
-                    if (delta.has("content")) {
-                        String content = delta.get("content").asText();
-                        log.info("추출된 content: '{}'", content);
-                        
-                        if (!content.isEmpty()) {
-                            log.info("최종 결과: {}", content);
-                            return content;
-                        }
+                    if (!content.isEmpty()) {
+                        return content;
                     }
                 }
             }
         } catch (Exception e) {
-            log.error("응답 파싱 실패: {}", e.getMessage(), e);
+            // JSON 파싱 실패는 정상적인 경우일 수 있음 (빈 청크 등)
         }
 
-        log.info("추출 실패, 빈 문자열 반환");
         return "";
     }
 }

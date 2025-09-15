@@ -1,7 +1,7 @@
-package com.project.mog.controller;
+package com.project.mog.controller.chatbot;
 
 import com.project.mog.dto.ChatRequest;
-import com.project.mog.service.OpenAIClient;
+import com.project.mog.service.chatbot.OpenAIClient;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,29 +21,30 @@ public class ChatController {
     
     private final OpenAIClient openAIClient;
     
+    // SSE 헤더를 상수로 분리
+    private static final String CONTENT_TYPE_SSE = "text/event-stream; charset=utf-8";
+    private static final String CACHE_CONTROL = "no-cache, no-transform";
+    private static final String CONNECTION = "keep-alive";
+    
+    // 에러 메시지를 상수로 분리
+    private static final String API_KEY_ERROR_MESSAGE = "data: {\"error\": \"OpenAI API 키가 설정되지 않았습니다.\"}\n\n";
+    private static final String STREAM_ERROR_MESSAGE = "data: {\"error\": \"챗봇 응답 생성 중 오류가 발생했습니다.\"}\n\n";
+    
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseEntity<Flux<String>> streamChat(@Valid @RequestBody ChatRequest chatRequest) {
         if (!openAIClient.isApiKeyValid()) {
             log.error("OpenAI API 키가 설정되지 않았습니다");
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_TYPE, "text/event-stream; charset=utf-8")
-                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-transform")
-                    .header("Connection", "keep-alive")
-                    .body(Flux.just("data: {\"error\": \"OpenAI API 키가 설정되지 않았습니다.\"}\n\n"));
+            return createSSEResponse(Flux.just(API_KEY_ERROR_MESSAGE));
         }
         
         Flux<String> stream = openAIClient.streamChatCompletion(chatRequest)
                 .map(this::formatSSE)
                 .onErrorResume(error -> {
                     log.error("챗봇 스트리밍 중 오류 발생", error);
-                    return Flux.just("data: {\"error\": \"챗봇 응답 생성 중 오류가 발생했습니다.\"}\n\n");
+                    return Flux.just(STREAM_ERROR_MESSAGE);
                 });
         
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, "text/event-stream; charset=utf-8")
-                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-transform")
-                .header("Connection", "keep-alive")
-                .body(stream);
+        return createSSEResponse(stream);
     }
     
     @GetMapping("/status")
@@ -62,6 +63,20 @@ public class ChatController {
         return ResponseEntity.ok(status);
     }
     
+    /**
+     * SSE 응답을 생성하는 공통 메서드
+     */
+    private ResponseEntity<Flux<String>> createSSEResponse(Flux<String> body) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, CONTENT_TYPE_SSE)
+                .header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL)
+                .header("Connection", CONNECTION)
+                .body(body);
+    }
+    
+    /**
+     * SSE 형식으로 데이터 포맷팅
+     */
     private String formatSSE(String data) {
         if (data == null || data.trim().isEmpty()) {
             return "data: \n\n";
