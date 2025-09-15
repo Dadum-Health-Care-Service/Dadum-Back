@@ -3,6 +3,10 @@ server:
   servlet:
     session:
       timeout: 1800
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
   address: 127.0.0.1
 
 spring:
@@ -10,6 +14,13 @@ spring:
     allow-bean-definition-overriding: true
   profiles:
     active: default
+  
+  # JVM 인코딩 설정
+  application:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
   messages:
     basename: i18n/messages
@@ -62,5 +73,5 @@ jwttoken:
 
 openai:
   api:
-    key: "${OPENAI_API_KEY}
+    key: "${OPENAI_API_KEY}"
     timeout: 30

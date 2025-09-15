@@ -5,6 +5,7 @@ import com.project.mog.service.OpenAIClient;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,18 +22,28 @@ public class ChatController {
     private final OpenAIClient openAIClient;
     
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> streamChat(@Valid @RequestBody ChatRequest chatRequest) {
+    public ResponseEntity<Flux<String>> streamChat(@Valid @RequestBody ChatRequest chatRequest) {
         if (!openAIClient.isApiKeyValid()) {
             log.error("OpenAI API 키가 설정되지 않았습니다");
-            return Flux.just("data: {\"error\": \"OpenAI API 키가 설정되지 않았습니다.\"}\n\n");
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_TYPE, "text/event-stream; charset=utf-8")
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-transform")
+                    .header("Connection", "keep-alive")
+                    .body(Flux.just("data: {\"error\": \"OpenAI API 키가 설정되지 않았습니다.\"}\n\n"));
         }
         
-        return openAIClient.streamChatCompletion(chatRequest)
+        Flux<String> stream = openAIClient.streamChatCompletion(chatRequest)
                 .map(this::formatSSE)
                 .onErrorResume(error -> {
                     log.error("챗봇 스트리밍 중 오류 발생", error);
                     return Flux.just("data: {\"error\": \"챗봇 응답 생성 중 오류가 발생했습니다.\"}\n\n");
                 });
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/event-stream; charset=utf-8")
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-transform")
+                .header("Connection", "keep-alive")
+                .body(stream);
     }
     
     @GetMapping("/status")
