@@ -241,6 +241,28 @@ public class UsersService {
 		}
 
 
+		public UsersDto loginPasswordless(String email, String passwordlessToken) throws NoSuchAlgorithmException {
+			UsersEntity usersEntity = usersRepository.findByEmail(email).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			AuthEntity authEntity = authRepository.findByUser(usersEntity);
+			
+			//패스워드리스 로그인 후 해쉬화한 패스워드리스토큰으로 재설정
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(passwordlessToken.getBytes(StandardCharsets.UTF_8));
+			StringBuilder sb = new StringBuilder();
+			for (byte b : hash) {
+			    sb.append(String.format("%02x", b));
+			}
+			String hexHash = sb.toString();
+			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+			String bcryptHash = encoder.encode(hexHash);
+			authEntity.setPassword(bcryptHash);
+			authEntity.setPasswordless(true);
+			
+			return UsersDto.toDto(usersEntity);
+		}
+		
+
+
 		
 		
 		

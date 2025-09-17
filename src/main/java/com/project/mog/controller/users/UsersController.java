@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.mog.controller.auth.EmailFindRequest;
 import com.project.mog.controller.auth.PasswordCheckRequest;
 import com.project.mog.controller.auth.PasswordUpdateRequest;
+import com.project.mog.controller.auth.PasswordlessLoginRequest;
 import com.project.mog.controller.auth.PasswordlessRegisterRequest;
 import com.project.mog.controller.login.LoginRequest;
 import com.project.mog.controller.login.LoginResponse;
@@ -173,6 +174,27 @@ public class UsersController implements UsersControllerDocs{
 		mailService.sendMail(mail);
 		
 		return ResponseEntity.status(HttpStatus.OK).body("비밀번호 찾기 이메일 전송 완료");
+	}
+	
+	@Transactional
+	@PostMapping("auth/passwordless/login")
+	public ResponseEntity<LoginResponse> loginPasswordless(@RequestBody PasswordlessLoginRequest passwordlessLoginRequest) throws NoSuchAlgorithmException{
+		String email = passwordlessLoginRequest.getEmail();
+		String passwordlessToken = passwordlessLoginRequest.getPasswordlessToken();
+		
+		UsersDto usersDto = usersService.loginPasswordless(email,passwordlessToken);
+		Long usersId = usersDto.getUsersId();
+		String role = usersDto.getRole();
+		String accessToken = jwtUtil.generateAccessToken(email);
+		String refreshToken = jwtUtil.generateRefreshToken(email);
+		LoginResponse loginResponse = LoginResponse.builder()
+				.usersId(usersId)
+				.email(email)
+				.role(role)
+				.accessToken(accessToken)
+				.refreshToken(refreshToken)
+				.build();
+		return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
 	}
 	
 	@Transactional
