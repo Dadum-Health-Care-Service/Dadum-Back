@@ -43,14 +43,12 @@ public class HealthConnectService {
 	            .stream()
 	            .map(step -> new StepDataEntity(step, healthConnectEntity))
 	            .collect(Collectors.toList());
-	    healthConnectEntity.setStepData(stepData);
 		
 	    List<HeartRateDataEntity> heartRates = Optional.ofNullable(heDto.getHeartRateData())
 	            .orElse(List.of())
 	            .stream()
 	            .map(hrDto -> new HeartRateDataEntity(hrDto.getBpm(), hrDto.getTime(), healthConnectEntity))
 	            .collect(Collectors.toList());
-	    healthConnectEntity.setHeartRateData(heartRates);
 		
 		healthConnectEntity.addStepData(stepData);
 		healthConnectEntity.addHeartRateData(heartRates);	
