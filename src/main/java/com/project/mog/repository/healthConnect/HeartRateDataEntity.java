@@ -14,6 +14,7 @@ public class HeartRateDataEntity {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "heart_rate_data_id")
 	private Long id;
 	
 	private double bpm;

@@ -24,6 +24,7 @@ public class StepDataEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "step_data_id")
 	private Long id;
 	
 	@Column(name = "step_count")
