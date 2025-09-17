@@ -7,7 +7,7 @@ server: #디폴트 8080
       charset: UTF-8
       enabled: true
       force: true
-  address: 127.0.0.1
+  address: 0.0.0.0
 spring:
   #messages.properties파일 위치 설정.기본값은 messages
   messages:

@@ -9,8 +9,10 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface HealthConnectRepository extends JpaRepository<HealthConnectEntity,Long>{
-	@Query(nativeQuery = true, value = "SELECT * FROM health_connect WHERE usersid=?1 ORDER BY healthdataid DESC LIMIT 1")
+	
+	List<HealthConnectEntity> findByUser_usersId(long userId);
+	
+	@Query(nativeQuery = true, value = "SELECT * FROM health_connect WHERE usersId=?1 ORDER BY healthdataid DESC LIMIT 1")
 	Optional<HealthConnectEntity> findLatestByUsersId(Long usersId);
 	
-	List<HealthConnectEntity> findByUsersId(long userId);
 }

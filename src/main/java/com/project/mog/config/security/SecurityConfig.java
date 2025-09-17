@@ -60,6 +60,7 @@ public class SecurityConfig {
 						"/api/v1/users/send/*",
 						"/api/v1/posts/list",
 						"/api/v1/payments/**",
+						"/api/v1/health/**",
 						"/api/shop/**",
 						"/swagger-ui/*",
 						"/swagger-resources/**",

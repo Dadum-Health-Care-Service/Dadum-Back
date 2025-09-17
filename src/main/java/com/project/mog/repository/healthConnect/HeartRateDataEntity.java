@@ -19,11 +19,14 @@ public class HeartRateDataEntity {
 	private double bpm;
 	private String time;
 	
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "health_connect_id")
 	private HealthConnectEntity healthConnect;
 	
-	public HeartRateDataEntity(double bpm,String time) {
+	public HeartRateDataEntity(double bpm,String time,HealthConnectEntity healthConnect) {
 		this.bpm=bpm;
 		this.time=time;
+		this.healthConnect=healthConnect;
 	}
 	
 

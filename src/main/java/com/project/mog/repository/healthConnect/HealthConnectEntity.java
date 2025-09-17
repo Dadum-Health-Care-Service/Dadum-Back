@@ -6,27 +6,47 @@ import java.util.List;
 import com.project.mog.repository.users.UsersEntity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor
-@Table(name = "health_connect")
+@AllArgsConstructor
+@Builder
+@Table(name = "healthConnect")
 public class HealthConnectEntity {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "heartconnectid")
+	@Column(name = "health_connect_id")
 	private Long id;
 	
-	@ElementCollection
-	@CollectionTable(name = "step_data", joinColumns = @JoinColumn(name="health_connect_id"))
-	@Column(name = "step")
-	private List<Integer> stepData;
+	@OneToMany(mappedBy = "healthConnect", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<StepDataEntity> stepData = new ArrayList<>();
 	
 	@OneToMany(mappedBy = "healthConnect", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<HeartRateDataEntity> heartRateData = new ArrayList<>();
+	
+	public void addStepData(List<StepDataEntity> steps) {
+		this.stepData.clear();
+		for (StepDataEntity step : steps) {
+			step.setHealthConnect(this);
+			this.stepData.add(step);
+		}
+	}
+	
+	public void addHeartRateData(List<HeartRateDataEntity> heartRates) {
+		this.heartRateData.clear();
+		for (HeartRateDataEntity hr : heartRates) {
+			hr.setHealthConnect(this);
+			this.heartRateData.add(hr);
+		}
+	}
 	
 	private double caloriesBurnedData;
 	private double distanceWalked;
@@ -40,10 +60,10 @@ public class HealthConnectEntity {
     @JoinColumn(name = "usersid", referencedColumnName="usersId", nullable = false)
     private UsersEntity user;
 	
-	public HealthConnectEntity(UsersEntity user,List<Integer> stepData, double caloriesBurnedData, double distanceWalked,
+	public HealthConnectEntity(UsersEntity user,double caloriesBurnedData, double distanceWalked,
 							double activeCaloriesBurned, Long totalSleepMinutes, Long deepSleepMinutes,
 							Long remSleepMinutes, Long lightSleepMinutes) {
-		this.stepData=stepData;
+		this.user=user;
 		this.caloriesBurnedData=caloriesBurnedData;
 		this.distanceWalked=distanceWalked;
 		this.activeCaloriesBurned=activeCaloriesBurned;
@@ -51,14 +71,6 @@ public class HealthConnectEntity {
 		this.deepSleepMinutes=deepSleepMinutes;
 		this.remSleepMinutes=remSleepMinutes;
 		this.lightSleepMinutes=lightSleepMinutes;
-	}
-	
-	public void addHeartRateData(List<HeartRateDataEntity> heartRates) {
-		this.heartRateData.clear();
-		heartRates.forEach(hr->{
-			hr.setHealthConnect(this);
-			this.heartRateData.add(hr);
-		});
 	}
 	
 }

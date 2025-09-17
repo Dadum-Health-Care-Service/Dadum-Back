@@ -1,6 +1,7 @@
 package com.project.mog.service.healthConnect;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.project.mog.repository.healthConnect.HealthConnectEntity;
 import com.project.mog.repository.healthConnect.HealthConnectRepository;
 import com.project.mog.repository.healthConnect.HeartRateDataEntity;
+import com.project.mog.repository.healthConnect.StepDataEntity;
 import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.repository.users.UsersRepository;
 
@@ -26,27 +28,76 @@ public class HealthConnectService {
 	public HealthConnectResponseDto saveHealthConnect(HealthConnectDto heDto, String email) {
 		UsersEntity user = usersRepository.findByEmail(email)
 				.orElseThrow(()-> new EntityNotFoundException("사용자를 찾을 수 없습니다. ID: "+email));
+		HealthConnectEntity healthConnectEntity = new HealthConnectEntity();
+		healthConnectEntity.setUser(user);
+		healthConnectEntity.setCaloriesBurnedData(heDto.getCaloriesBurnedData());
+		healthConnectEntity.setDistanceWalked(heDto.getDistanceWalked());
+		healthConnectEntity.setActiveCaloriesBurned(heDto.getActiveCaloriesBurned());
+		healthConnectEntity.setTotalSleepMinutes(heDto.getTotalSleepMinutes());
+		healthConnectEntity.setDeepSleepMinutes(heDto.getDeepSleepMinutes());
+		healthConnectEntity.setRemSleepMinutes(heDto.getRemSleepMinutes());
+		healthConnectEntity.setLightSleepMinutes(heDto.getLightSleepMinutes());
 		
-		HealthConnectEntity healthConnectEntity = new HealthConnectEntity(
-				user,
-				heDto.getStepData(),
-				heDto.getCaloriesBurnedData(),
-				heDto.getDistanceWalked(),
-				heDto.getActiveCaloriesBurned(),
-				heDto.getTotalSleepMinutes(),
-				heDto.getDeepSleepMinutes(),
-				heDto.getRemSleepMinutes(),
-				heDto.getLightSleepMinutes()
-				);
+		List<StepDataEntity> stepData = Optional.ofNullable(heDto.getStepData())
+	            .orElse(List.of())
+	            .stream()
+	            .map(step -> new StepDataEntity(step, healthConnectEntity))
+	            .collect(Collectors.toList());
+	    healthConnectEntity.setStepData(stepData);
 		
-		List<HeartRateDataEntity> heartRates = heDto.getHeartRateData().stream()
-				.map(hrDto -> new HeartRateDataEntity(hrDto.getBpm(), hrDto.getTime()))
-				.collect(Collectors.toList());
+	    List<HeartRateDataEntity> heartRates = Optional.ofNullable(heDto.getHeartRateData())
+	            .orElse(List.of())
+	            .stream()
+	            .map(hrDto -> new HeartRateDataEntity(hrDto.getBpm(), hrDto.getTime(), healthConnectEntity))
+	            .collect(Collectors.toList());
+	    healthConnectEntity.setHeartRateData(heartRates);
 		
-		healthConnectEntity.addHeartRateData(heartRates);
+		healthConnectEntity.addStepData(stepData);
+		healthConnectEntity.addHeartRateData(heartRates);	
+		
 		healthConnectRepository.save(healthConnectEntity);
 		
-		return new HealthConnectResponseDto("헬스커넥트 데이터를 성공적으로 수신하였습니다.");
+		return new HealthConnectResponseDto("헬스커넥트 데이터를 성공적으로 수신 및 저장하였습니다.");
+		
+		
 	}
+	
+	@Transactional(readOnly = true)
+	public List<HealthConnectDto> getHealthConnectData(Long usersId){
+		List<HealthConnectEntity> entities = healthConnectRepository.findByUser_usersId(usersId);
+		return entities.stream()
+				.map(this::convertToDto)
+				.collect(Collectors.toList());
+	}
+	
+	
+	@Transactional
+	public void deleteHealthConnectDataByUsersId(Long usersId) {
+		List<HealthConnectEntity> entities = healthConnectRepository.findByUser_usersId(usersId);
+		healthConnectRepository.deleteAll(entities);
+	}
+	
+	
+	private HealthConnectDto convertToDto(HealthConnectEntity entity) {
+		List<Integer> stepData = entity.getStepData().stream()
+				.map(StepDataEntity::getStepCount)
+				.collect(Collectors.toList());
+		List<HealthConnectDto.HeartRateDataDto> heartRateData = entity.getHeartRateData().stream()
+				.map(hrEntity -> new HealthConnectDto.HeartRateDataDto(hrEntity.getBpm(),hrEntity.getTime()))
+				.collect(Collectors.toList());
+		
+		return HealthConnectDto.builder()
+				.stepData(stepData)
+				.heartRateData(heartRateData)
+				.caloriesBurnedData(entity.getCaloriesBurnedData())
+				.distanceWalked(entity.getDistanceWalked())
+				.activeCaloriesBurned(entity.getActiveCaloriesBurned())
+				.totalSleepMinutes(entity.getTotalSleepMinutes())
+				.deepSleepMinutes(entity.getDeepSleepMinutes())
+				.remSleepMinutes(entity.getRemSleepMinutes())
+				.lightSleepMinutes(entity.getLightSleepMinutes())
+				.build();
+	}
+	
 
 }
