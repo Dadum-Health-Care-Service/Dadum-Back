@@ -12,6 +12,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import com.project.mog.repository.comment.CommentEntity;
+import com.project.mog.repository.like.LikeEntity;
 import com.project.mog.repository.users.UsersEntity;
 
 @Entity                         
@@ -46,4 +47,7 @@ public class PostEntity {
     
     @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<CommentEntity> comments = new ArrayList<>();
-}
+    
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<LikeEntity> likes = new ArrayList<>();
+ }

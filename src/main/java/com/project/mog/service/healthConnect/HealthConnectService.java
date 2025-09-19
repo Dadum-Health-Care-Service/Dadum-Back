@@ -62,6 +62,8 @@ public class HealthConnectService {
 	
 	@Transactional(readOnly = true)
 	public List<HealthConnectDto> getHealthConnectData(Long usersId){
+		UsersEntity user = usersRepository.findById(usersId)
+				.orElseThrow(()-> new EntityNotFoundException("사용자를 찾을 수 없습니다. usersID: "+usersId));
 		List<HealthConnectEntity> entities = healthConnectRepository.findByUser_usersId(usersId);
 		return entities.stream()
 				.map(this::convertToDto)
@@ -71,6 +73,8 @@ public class HealthConnectService {
 	
 	@Transactional
 	public void deleteHealthConnectDataByUsersId(Long usersId) {
+		UsersEntity user = usersRepository.findById(usersId)
+				.orElseThrow(()-> new EntityNotFoundException("사용자를 찾을 수 없습니다. usersID: "+usersId));
 		List<HealthConnectEntity> entities = healthConnectRepository.findByUser_usersId(usersId);
 		healthConnectRepository.deleteAll(entities);
 	}
