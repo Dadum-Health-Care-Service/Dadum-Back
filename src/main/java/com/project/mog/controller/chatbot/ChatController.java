@@ -87,7 +87,7 @@ public class ChatController {
             return "data: [DONE]\n\n";
         }
         
-        // 순수 텍스트는 data: 접두사 없이 전송
-        return data + "\n";
+        // 모든 텍스트에 data: 접두사 추가 (SSE 표준 형식)
+        return "data: " + data + "\n\n";
     }
 }
