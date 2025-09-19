@@ -13,6 +13,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
@@ -61,6 +62,7 @@ public class SecurityConfig {
 						"/api/v1/posts/list",
 						"/api/v1/payments/**",
 						"/api/shop/**",
+						"/api/chat/**",  // 챗봇 API 허용
 						"/swagger-ui/*",
 						"/swagger-resources/**",
 						"/v3/api-docs/**",
@@ -119,10 +121,26 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000","https://mog-front-deploy-dev-git-main-oen0theras-projects.vercel.app/"));
+        
+        // 허용할 Origin 설정
+        config.setAllowedOrigins(List.of(
+            "http://localhost:3000",  // 기존 React 개발 서버
+            "https://mog-front-deploy-dev-git-main-oen0theras-projects.vercel.app",  // 기존 배포된 프론트엔드
+            "http://localhost:5173",  // Vite 개발 서버 (챗봇용)
+            "http://localhost:5174"   // Vite 대체 포트 (챗봇용)
+        ));
+        
+        // 허용할 HTTP 메서드 설정
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        
+        // 허용할 헤더 설정
         config.setAllowedHeaders(List.of("*"));
+        
+        // 쿠키 및 인증 정보 허용
         config.setAllowCredentials(true);
+        
+        // Preflight 요청 캐시 시간 (초)
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

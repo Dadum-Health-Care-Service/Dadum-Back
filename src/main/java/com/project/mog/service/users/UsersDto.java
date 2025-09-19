@@ -51,11 +51,10 @@ public class UsersDto {
 					.email(email)
 					.profileImg(profileImg)
 					.phoneNum(phoneNum)
-					.role(role)
-					.regDate(regDate)
-					.updateDate(updateDate)
+					.regDate(null) // @PrePersist에서 자동 설정
+					.updateDate(null) // @PreUpdate에서 자동 설정
 					.bios(Optional.ofNullable(biosDto).map(BiosDto::toEntity).orElse(null))
-					.auth(authDto.toEntity())
+					.auth(Optional.ofNullable(authDto).map(AuthDto::toEntity).orElse(null))
 					.build();
 		if(biosDto!=null) {
 			BiosEntity bEntity = biosDto.toEntity();

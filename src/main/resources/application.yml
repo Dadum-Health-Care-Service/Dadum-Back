@@ -1,13 +1,18 @@
-server: #디폴트 8080
-  port: 8080 
+server:
+  port: 8080
   servlet:
     session:
+<<<<<<< HEAD
       timeout: 1800 #30분이 기본값
+=======
+      timeout: 1800
+>>>>>>> feat/chatbot
     encoding:
       charset: UTF-8
       enabled: true
       force: true
   address: 127.0.0.1
+<<<<<<< HEAD
 spring:
   #messages.properties파일 위치 설정.기본값은 messages
   messages:
@@ -47,16 +52,75 @@ spring:
           lob:
             non_contextual_creation: true
 
+=======
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  profiles:
+    active: default
+  
+  # JVM 인코딩 설정
+  application:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+  messages:
+    basename: i18n/messages
+
+  mvc:
+    static-path-pattern: /**
+
+  web:
+    resources:
+      static-location: classpath:/static/
+      add-mappings: true
+
+  datasource:
+    driver-class-name: oracle.jdbc.OracleDriver
+    url: jdbc:oracle:thin:@localhost:1521/XEPDB1
+    username: MOG_TEST
+    password: MOG_TEST
+    hikari:
+      auto-commit: true
+      connection-timeout: 30000
+      maximum-pool-size: 10
+
+  jpa:
+    hibernate:
+      # Hibernate 6은 자동으로 dialect를 감지합니다. 필요시 아래 주석 해제해 사용.
+      # dialect: org.hibernate.dialect.OracleDialect
+      ddl-auto: create
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
+>>>>>>> feat/chatbot
   mail:
     host: smtp.gmail.com
     port: 587
     username: mogmyowngym@gmail.com
+<<<<<<< HEAD
     password: bsbv jxtd keou wxvy
+=======
+    password: "bsbv jxtd keou wxvy"
+>>>>>>> feat/chatbot
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
       mail.smtp.ssl.protocols: TLSv1.2
-      
 jwttoken:
   secret-key: Nf/vIRqt0/bKThqJ6tOy2M9tqJX+rJxGG9HrZgsBrT4=
 
+openai:
+  api:
+    key: "${OPENAI_API_KEY:}"
+    timeout: 30
