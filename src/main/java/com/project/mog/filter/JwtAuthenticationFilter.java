@@ -2,7 +2,6 @@ package com.project.mog.filter;
 
 import java.io.IOException;
 
-import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,18 +27,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	private final UsersDetailService usersDetailService;
 	
 	@Override
-	protected void doFilterInternal(@NonNull HttpServletRequest request, 
-									@NonNull HttpServletResponse response, 
-									@NonNull FilterChain filterChain)
+	protected void doFilterInternal(HttpServletRequest request, 
+									HttpServletResponse response, 
+									FilterChain filterChain)
 									throws ServletException, IOException {
 		String requestURI = request.getRequestURI();
 		System.out.println("JwtAuthenticationFilter doFilterInternal 실행됨: " + requestURI);
-		
-		// 챗봇 API는 JWT 인증 제외
-		if (requestURI.startsWith("/api/chat/")) {
-			filterChain.doFilter(request, response);
-			return;
-		}
 		
 		String header = request.getHeader("Authorization");
 		if(header!=null && header.startsWith("Bearer ")) {
