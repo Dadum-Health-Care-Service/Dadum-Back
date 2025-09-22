@@ -125,7 +125,6 @@ public class SecurityConfig {
         // 허용할 Origin 설정
         config.setAllowedOrigins(List.of(
             "http://localhost:3000",  // 기존 React 개발 서버
-            "https://mog-front-deploy-dev-git-main-oen0theras-projects.vercel.app",  // 기존 배포된 프론트엔드
             "http://localhost:5173",  // Vite 개발 서버 (챗봇용)
             "http://localhost:5174"   // Vite 대체 포트 (챗봇용)
         ));

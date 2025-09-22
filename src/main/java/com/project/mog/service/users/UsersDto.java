@@ -51,9 +51,9 @@ public class UsersDto {
 					.email(email)
 					.profileImg(profileImg)
 					.phoneNum(phoneNum)
-					.role(role) // role 필드 추가
-					.regDate(null) // @PrePersist에서 자동 설정
-					.updateDate(null) // @PreUpdate에서 자동 설정
+					.role(role) 
+					.regDate(regDate) 
+					.updateDate(updateDate) 
 					.bios(Optional.ofNullable(biosDto).map(BiosDto::toEntity).orElse(null))
 					.auth(Optional.ofNullable(authDto).map(AuthDto::toEntity).orElse(null))
 					.build();
