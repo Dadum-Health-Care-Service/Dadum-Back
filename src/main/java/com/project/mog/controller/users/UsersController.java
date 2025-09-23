@@ -30,6 +30,10 @@ import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.security.jwt.JwtUtil;
 import com.project.mog.service.mail.MailDto;
 import com.project.mog.service.mail.MailService;
+import com.project.mog.service.role.RoleAssignmentDto;
+import com.project.mog.service.role.RoleRequestDto;
+import com.project.mog.service.role.RolesDto;
+import com.project.mog.service.role.RolesService;
 import com.project.mog.service.users.UsersDto;
 import com.project.mog.service.users.UsersInfoDto;
 import com.project.mog.service.users.UsersService;
@@ -48,6 +52,7 @@ public class UsersController implements UsersControllerDocs{
 	private final JwtUtil jwtUtil;
 	private final UsersService usersService;
 	private final MailService mailService;
+	private final RolesService rolesService;
 	
 	
 	@GetMapping("list")
@@ -95,7 +100,7 @@ public class UsersController implements UsersControllerDocs{
 		
 		long usersId = usersDto.getUsersId();
 		String email = usersDto.getEmail();
-		String role = usersDto.getRole();
+		String role = usersDto.getRoleAssignmentDto().getRolesDto().getRoleName();
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		
@@ -116,7 +121,7 @@ public class UsersController implements UsersControllerDocs{
 		UsersDto usersDto = usersService.socialLogin(request);
 		long usersId = usersDto.getUsersId();
 		String email = usersDto.getEmail();
-		String role = usersDto.getRole();
+		String role = usersDto.getRoleAssignmentDto().getRolesDto().getRoleName();
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		
@@ -172,4 +177,12 @@ public class UsersController implements UsersControllerDocs{
 		return ResponseEntity.status(HttpStatus.OK).body("비밀번호 찾기 이메일 전송 완료");
 	}
 	
+	@Transactional
+	@PostMapping("role/request")
+	public ResponseEntity<RolesDto> requestRoleAssignment(@RequestHeader("Authorization") String authHeader, @RequestBody RoleRequestDto roleRequestDto) {
+		String token = authHeader.replace("Bearer ", "");
+		String authEmail = jwtUtil.extractUserEmail(token);
+		RoleAssignmentDto roleAssignmentDto = rolesService.requestRoleAssignment(roleRequestDto,authEmail);
+		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto.getRolesDto());
+	}
 }

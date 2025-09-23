@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.project.mog.repository.auth.AuthEntity;
 import com.project.mog.repository.bios.BiosEntity;
+import com.project.mog.repository.role.RoleAssignmentEntity;
 
 import jakarta.persistence.Basic;
 import jakarta.persistence.CascadeType;
@@ -55,10 +56,7 @@ public class UsersEntity {
 	
 	@Column(length=11,nullable=false)
 	private String phoneNum;
-	
-	@Column(length=20,nullable=false)
-	private String role;
-	
+
 	@Column(nullable=false,updatable = false)
 	private LocalDateTime regDate;
 	@Column(nullable=false)
@@ -77,5 +75,7 @@ public class UsersEntity {
 	private BiosEntity bios;
 	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 	private AuthEntity auth;
+	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+	private RoleAssignmentEntity roleAssignment;
 
 }

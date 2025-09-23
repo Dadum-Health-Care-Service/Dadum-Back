@@ -5,9 +5,11 @@ import java.util.Optional;
 
 import com.project.mog.repository.auth.AuthEntity;
 import com.project.mog.repository.bios.BiosEntity;
+import com.project.mog.repository.role.RoleAssignmentEntity;
 import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.service.auth.AuthDto;
 import com.project.mog.service.bios.BiosDto;
+import com.project.mog.service.role.RoleAssignmentDto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
@@ -28,6 +30,7 @@ public class UsersDto {
 	@Nullable
 	private BiosDto biosDto;
 	private AuthDto authDto;
+	private RoleAssignmentDto roleAssignmentDto;
 	@Schema(description = "usersName",example="테스트유저")
 	private String usersName;
 	@Schema(description = "nickName",example="테스트닉네임")
@@ -38,8 +41,7 @@ public class UsersDto {
 	private String profileImg;
 	@Schema(description = "phoneNum", example="01012345678")
 	private String phoneNum;
-	@Schema(description = "role", example="USER")
-	private String role;
+	
 	private LocalDateTime regDate;
 	private LocalDateTime updateDate;
 	
@@ -51,7 +53,7 @@ public class UsersDto {
 					.email(email)
 					.profileImg(profileImg)
 					.phoneNum(phoneNum)
-					.role(role) 
+					.roleAssignment(roleAssignmentDto.toEntity()) 
 					.regDate(regDate) 
 					.updateDate(updateDate) 
 					.bios(Optional.ofNullable(biosDto).map(BiosDto::toEntity).orElse(null))
@@ -67,6 +69,11 @@ public class UsersDto {
 			aEntity.setUser(uEntity);
 			uEntity.setAuth(aEntity);
 		}
+		if(roleAssignmentDto!=null) {
+			RoleAssignmentEntity rEntity = roleAssignmentDto.toEntity();
+			rEntity.setUser(uEntity);
+			uEntity.setRoleAssignment(rEntity);
+		}
 		return uEntity;
 	}
 	
@@ -79,7 +86,7 @@ public class UsersDto {
 				.email(uEntity.getEmail())
 				.profileImg(uEntity.getProfileImg())
 				.phoneNum(uEntity.getPhoneNum())
-				.role(uEntity.getRole())
+				.roleAssignmentDto(RoleAssignmentDto.toDto(uEntity.getRoleAssignment()))
 				.regDate(uEntity.getRegDate())
 				.updateDate(uEntity.getUpdateDate())
 				.biosDto(BiosDto.toDto(uEntity.getBios()))
