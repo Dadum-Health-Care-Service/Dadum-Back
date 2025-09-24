@@ -157,34 +157,22 @@ public class UsersService {
 		}
 
 		public UsersInfoDto editUser(UsersInfoDto usersInfoDto, Long usersId, String authEmail) {		
-			// 현재 로그인한 사용자 정보 조회
-			UsersEntity currentUser = usersRepository.findByEmail(authEmail)
-				.orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다"));
-			
 			// 수정할 사용자 정보 조회
 			UsersEntity usersEntity = usersRepository.findById(usersId)
 				.orElseThrow(() -> new IllegalArgumentException(usersId + "가 존재하지 않습니다"));
-			
-			// 권한 검증: SUPER_ADMIN이거나 자기 자신인 경우만 수정 가능
-			if (!currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
-				throw new AccessDeniedException("자기 자신만 수정 가능합니다");
+			if (!authEmail.equals(usersEntity.getEmail())) {
+				throw new IllegalArgumentException("인가되지 않은 사용자입니다");
 			}
-			
-			// 역할 변경 권한 검증
-			if (usersInfoDto.getRoleAssignmentDto() != null && !usersInfoDto.getRoleAssignmentDto().getRolesDto().getRoleName().equals(usersEntity.getRoleAssignment().getRole().getRoleName())) {
-				// SUPER_ADMIN만 역할을 변경할 수 있음
-				if (!currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN")) {
-					throw new AccessDeniedException("역할 변경은 최고 관리자만 가능합니다");
-				}
-				
-				// SUPER_ADMIN은 다른 SUPER_ADMIN을 만들 수 없음
-				if (usersInfoDto.getRoleAssignmentDto().getRolesDto().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
-					throw new AccessDeniedException("다른 사용자를 최고 관리자로 만들 수 없습니다");
-				}
-			}
-			
 			BiosEntity biosEntity = biosRepository.findByUser(usersEntity);
-			
+			if(biosEntity==null&usersInfoDto.getBiosDto()!=null) {
+				BiosEntity newBiosEntity = BiosEntity.builder()
+						.age(usersInfoDto.getBiosDto().getAge())
+						.gender(usersInfoDto.getBiosDto().isGender())
+						.height(usersInfoDto.getBiosDto().getHeight())
+						.weight(usersInfoDto.getBiosDto().getWeight())
+						.build();
+				return usersInfoDto.applyTo(usersEntity, newBiosEntity);
+			}
 			return usersInfoDto.applyTo(usersEntity, biosEntity);
 		}
 

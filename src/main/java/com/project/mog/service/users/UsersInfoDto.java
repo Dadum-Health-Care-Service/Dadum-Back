@@ -37,8 +37,6 @@ public class UsersInfoDto {
 	private String profileImg;
 	@Schema(description = "phoneNum", example="01012345678")
 	private String phoneNum;
-	@Schema(description = "role", example="USER")
-	private RoleAssignmentDto roleAssignmentDto;
 	private LocalDateTime regDate;
 	private LocalDateTime updateDate;
 	
@@ -48,7 +46,6 @@ public class UsersInfoDto {
 		user.setNickName(nickName);
 		user.setProfileImg(profileImg);
 		user.setPhoneNum(phoneNum);
-		user.setRoleAssignment(roleAssignmentDto.toEntity());
 		user.setUpdateDate(LocalDateTime.now());
 		
 		if(biosDto!=null) {
@@ -69,7 +66,6 @@ public class UsersInfoDto {
 				.profileImg(user.getProfileImg())
 				.nickName(user.getNickName())
 				.phoneNum(user.getPhoneNum())
-				.roleAssignmentDto(RoleAssignmentDto.toDto(user.getRoleAssignment()))
 				.regDate(user.getRegDate())
 				.updateDate(user.getUpdateDate())
 				.biosDto(BiosDto.toDto(user.getBios()))
@@ -83,7 +79,6 @@ public class UsersInfoDto {
 				.profileImg(user.getProfileImg())
 				.nickName(user.getNickName())
 				.phoneNum(user.getPhoneNum())
-				.roleAssignmentDto(RoleAssignmentDto.toDto(user.getRoleAssignment()))
 				.regDate(user.getRegDate())
 				.updateDate(user.getUpdateDate())
 				.biosDto(BiosDto.toDto(user.getBios()))
