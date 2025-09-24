@@ -1,6 +1,8 @@
 package com.project.mog.service.users;
 
 
+
+import java.time.LocalDateTime;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -36,6 +38,11 @@ import com.project.mog.service.post.PostService;
 import com.project.mog.service.routine.RoutineService;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import com.project.mog.repository.role.RoleAssignmentEntity;
+import com.project.mog.repository.role.RolesEntity;
+import com.project.mog.repository.role.RolesRepository;
+import com.project.mog.service.role.RoleAssignmentDto;
+import com.project.mog.service.role.RolesDto;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
@@ -46,6 +53,7 @@ public class UsersService {
 		private AuthRepository authRepository;
 		private KakaoApiClient kakaoApiClient;
 		private PasswordEncoder passwordEncoder;
+		private RolesRepository rolesRepository;
 		private HealthConnectService healthConnectService;
 		private PostService postService;
 		
@@ -59,12 +67,14 @@ public class UsersService {
 							HealthConnectService healthConnectService,
 							PostService postService,
 							PaymentRepository paymentRepository,
-							OrderRepository orderRepository) {
+							OrderRepository orderRepository,
+              RolesRepository rolesRepository) {
 			this.usersRepository=usersRepository;
 			this.biosRepository=biosRepository;
 			this.authRepository=authRepository;
 			this.kakaoApiClient=kakaoApiClient;
 			this.passwordEncoder=passwordEncoder;
+			this.rolesRepository=rolesRepository;
 			this.healthConnectService=healthConnectService;
 			this.postService=postService;
 		}
@@ -76,19 +86,32 @@ public class UsersService {
 		}
 
 
-				public UsersDto createUser(UsersDto usersDto) {
-		UsersEntity isDuplicated = usersRepository.findByEmail(usersDto.getEmail()).orElse(null);
-		if(isDuplicated!=null) throw new IllegalArgumentException("중복된 아이디입니다");
-		
-		// 기본 역할을 USER로 설정
-		if (usersDto.getRole() == null || usersDto.getRole().trim().isEmpty()) {
-			usersDto.setRole("USER");
-		}
-		
-		// UsersEntity로 변환 (비밀번호 암호화 없이)
-		UsersEntity uEntity = usersDto.toEntity();
-		
-		UsersEntity savedEntity = usersRepository.save(uEntity);
+		public UsersDto createUser(UsersDto usersDto) {
+			UsersEntity isDuplicated = usersRepository.findByEmail(usersDto.getEmail()).orElse(null);
+			RolesEntity role = rolesRepository.findByRoleName("USER").orElse(null);
+			
+			if(isDuplicated!=null) throw new IllegalArgumentException("중복된 아이디입니다");
+
+			
+			// 기본 역할을 USER로 설정
+			if (usersDto.getRoleAssignmentDto() == null || usersDto.getRoleAssignmentDto().getRolesDto().getRoleName().trim().isEmpty()) {
+				RoleAssignmentEntity roleAssignment = RoleAssignmentEntity.builder().isActive(1L).assignedAt(LocalDateTime.now()).expiredAt(LocalDateTime.now().plusDays(30)).build();
+				roleAssignment.setRole(role);
+				usersDto.setRoleAssignmentDto(RoleAssignmentDto.toDto(roleAssignment));
+			}
+			
+            // UsersEntity로 변환 (비밀번호 암호화 없이)
+            UsersEntity uEntity = usersDto.toEntity();
+
+            // ROLE 중복 생성 방지: 영속 ROLE로 강제 치환
+            if (uEntity.getRoleAssignment() != null && uEntity.getRoleAssignment().getRole() != null) {
+                String roleNameResolved = uEntity.getRoleAssignment().getRole().getRoleName();
+                RolesEntity persistentRole = rolesRepository.findByRoleName(roleNameResolved)
+                        .orElseThrow(() -> new IllegalArgumentException("역할이 존재하지 않습니다: " + roleNameResolved));
+                uEntity.getRoleAssignment().setRole(persistentRole);
+            }
+
+            UsersEntity savedEntity = usersRepository.save(uEntity);
 			return UsersDto.toDto(uEntity);
 		}
 
@@ -111,17 +134,17 @@ public class UsersService {
 				.orElseThrow(() -> new RuntimeException("삭제할 사용자를 찾을 수 없습니다"));
 			
 			// 권한 검증: SUPER_ADMIN이거나 자기 자신인 경우만 삭제 가능
-			if (!currentUser.getRole().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
+			if (!currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
 				throw new AccessDeniedException("자기 자신만 삭제 가능합니다");
 			}
 			
 			// SUPER_ADMIN은 자기 자신을 삭제할 수 없음
-			if (currentUser.getRole().equals("SUPER_ADMIN") && currentUser.getUsersId() == usersId) {
+			if (currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() == usersId) {
 				throw new AccessDeniedException("최고 관리자는 자기 자신을 삭제할 수 없습니다");
 			}
 			
 			// ADMIN은 다른 ADMIN을 삭제할 수 없음
-			if (currentUser.getRole().equals("ADMIN") && targetUser.getRole().equals("ADMIN")) {
+			if (currentUser.getRoleAssignment().getRole().getRoleName().equals("ADMIN") && targetUser.getRoleAssignment().getRole().getRoleName().equals("ADMIN")) {
 				throw new AccessDeniedException("일반 관리자는 다른 관리자를 삭제할 수 없습니다");
 			}
 			
@@ -143,19 +166,19 @@ public class UsersService {
 				.orElseThrow(() -> new IllegalArgumentException(usersId + "가 존재하지 않습니다"));
 			
 			// 권한 검증: SUPER_ADMIN이거나 자기 자신인 경우만 수정 가능
-			if (!currentUser.getRole().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
+			if (!currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
 				throw new AccessDeniedException("자기 자신만 수정 가능합니다");
 			}
 			
 			// 역할 변경 권한 검증
-			if (usersInfoDto.getRole() != null && !usersInfoDto.getRole().equals(usersEntity.getRole())) {
+			if (usersInfoDto.getRoleAssignmentDto() != null && !usersInfoDto.getRoleAssignmentDto().getRolesDto().getRoleName().equals(usersEntity.getRoleAssignment().getRole().getRoleName())) {
 				// SUPER_ADMIN만 역할을 변경할 수 있음
-				if (!currentUser.getRole().equals("SUPER_ADMIN")) {
+				if (!currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN")) {
 					throw new AccessDeniedException("역할 변경은 최고 관리자만 가능합니다");
 				}
 				
 				// SUPER_ADMIN은 다른 SUPER_ADMIN을 만들 수 없음
-				if (usersInfoDto.getRole().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
+				if (usersInfoDto.getRoleAssignmentDto().getRolesDto().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
 					throw new AccessDeniedException("다른 사용자를 최고 관리자로 만들 수 없습니다");
 				}
 			}
@@ -240,7 +263,6 @@ public class UsersService {
 			return UsersInfoDto.toDto(usersEntity);
 		}
 
-
 		public UsersDto registerPasswordless(String authEmail, String passwordlessToken) throws JsonProcessingException, NoSuchAlgorithmException {
 			UsersEntity usersEntity = usersRepository.findByEmail(authEmail).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 			AuthEntity authEntity = authRepository.findByUser(usersEntity);
@@ -282,11 +304,5 @@ public class UsersService {
 			
 			return UsersDto.toDto(usersEntity);
 		}
-		
-
-
-		
-		
-		
 		
 }

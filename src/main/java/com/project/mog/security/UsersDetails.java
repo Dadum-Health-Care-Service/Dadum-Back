@@ -19,7 +19,7 @@ public class UsersDetails implements UserDetails {
 	
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		String role = usersEntity.getRole();
+		String role = usersEntity.getRoleAssignment().getRole().getRoleName();
 		
 		// 역할에 따른 권한 부여
 		switch (role) {
