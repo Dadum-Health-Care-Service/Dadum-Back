@@ -5,6 +5,7 @@ import com.project.mog.repository.post.PostRepository;
 import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.repository.users.UsersRepository;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -60,6 +61,13 @@ public class PostService {
     	PostEntity post = postRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("해당 게시글이 없습니다"));;
     	postRepository.delete(post);
         return PostDto.toDto(post);
+    }
+    
+    public void deleteByUsersId(Long usersId) {
+    	UsersEntity usersEntity = usersRepository.findById(usersId)
+    			.orElseThrow(()-> new EntityNotFoundException("사용자를 찾을 수 없습니다. usersID: "+usersId));
+    	List<PostEntity> posts = postRepository.findAllOrderByRegDate(usersId);
+    	postRepository.deleteAll(posts);
     }
 
 	public List<PostDto> totalListAll() {

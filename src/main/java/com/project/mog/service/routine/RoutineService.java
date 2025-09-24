@@ -224,5 +224,11 @@ public class RoutineService {
 		return RoutineDto.toDto(routineEntity);
 	}
 	
+	public void deleteRoutineByUsersId(Long usersId) {
+		UsersEntity userEntity = usersRepository.findById(usersId).orElseThrow(()-> new IllegalArgumentException("유효하지 않은 사용자입니다"));
+		List<RoutineEntity> routineEntities = routineRepository.findByUsersId(usersId);
+		routineRepository.deleteAll(routineEntities);
+	}
+	
 	
 }

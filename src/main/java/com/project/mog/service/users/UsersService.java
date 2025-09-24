@@ -1,7 +1,11 @@
 package com.project.mog.service.users;
 
 
+
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -11,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.mog.annotation.UserAuthorizationCheck;
 import com.project.mog.api.KakaoApiClient;
 import com.project.mog.controller.auth.EmailFindRequest;
@@ -21,15 +26,23 @@ import com.project.mog.repository.auth.AuthEntity;
 import com.project.mog.repository.auth.AuthRepository;
 import com.project.mog.repository.bios.BiosEntity;
 import com.project.mog.repository.bios.BiosRepository;
-import com.project.mog.repository.role.RoleAssignmentEntity;
-import com.project.mog.repository.role.RolesEntity;
-import com.project.mog.repository.role.RolesRepository;
+import com.project.mog.repository.like.LikeRepository;
+import com.project.mog.repository.payment.OrderRepository;
+import com.project.mog.repository.payment.PaymentRepository;
 import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.repository.users.UsersRepository;
 import com.project.mog.service.bios.BiosDto;
+import com.project.mog.service.comment.CommentService;
+import com.project.mog.service.healthConnect.HealthConnectService;
+import com.project.mog.service.post.PostService;
+import com.project.mog.service.routine.RoutineService;
+import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import com.project.mog.repository.role.RoleAssignmentEntity;
+import com.project.mog.repository.role.RolesEntity;
+import com.project.mog.repository.role.RolesRepository;
 import com.project.mog.service.role.RoleAssignmentDto;
 import com.project.mog.service.role.RolesDto;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
@@ -41,15 +54,29 @@ public class UsersService {
 		private KakaoApiClient kakaoApiClient;
 		private PasswordEncoder passwordEncoder;
 		private RolesRepository rolesRepository;
+		private HealthConnectService healthConnectService;
+		private PostService postService;
 		
 		
-		public UsersService(UsersRepository usersRepository, BiosRepository biosRepository,AuthRepository authRepository, KakaoApiClient kakaoApiClient, PasswordEncoder passwordEncoder, RolesRepository rolesRepository) {
+
+		public UsersService(UsersRepository usersRepository, 
+							BiosRepository biosRepository,
+							AuthRepository authRepository, 
+							KakaoApiClient kakaoApiClient, 
+							PasswordEncoder passwordEncoder, 
+							HealthConnectService healthConnectService,
+							PostService postService,
+							PaymentRepository paymentRepository,
+							OrderRepository orderRepository,
+              RolesRepository rolesRepository) {
 			this.usersRepository=usersRepository;
 			this.biosRepository=biosRepository;
 			this.authRepository=authRepository;
 			this.kakaoApiClient=kakaoApiClient;
 			this.passwordEncoder=passwordEncoder;
 			this.rolesRepository=rolesRepository;
+			this.healthConnectService=healthConnectService;
+			this.postService=postService;
 		}
 
 
@@ -121,6 +148,10 @@ public class UsersService {
 				throw new AccessDeniedException("일반 관리자는 다른 관리자를 삭제할 수 없습니다");
 			}
 			
+			//user삭제 전 연결되어있는 데이터 먼저 삭제
+			healthConnectService.deleteHealthConnectDataByUsersId(usersId); //healthConnect삭제로 연결되어있는 heartRateData,StepData 함께 삭제
+			postService.deleteByUsersId(usersId); //post삭제로 연결되어있는 comment,like 함께 삭제
+			
 			usersRepository.deleteById(usersId);
 			return UsersInfoDto.toDto(targetUser);
 		}
@@ -162,10 +193,19 @@ public class UsersService {
 		UsersEntity usersEntity = usersRepository.findByEmail(request.getEmail())
 			.orElseThrow(() -> new IllegalArgumentException("올바르지 않은 아이디/비밀번호입니다"));
 		
-		// 2. 비밀번호 검증 (평문 비밀번호와 비교)
+		System.out.println(usersEntity.getAuth().isPasswordless());
+		
+		// 2. 패스워드리스 등록됐을 경우 반환
+		if(usersEntity.getAuth().isPasswordless()==true) {
+			throw new AccessDeniedException("패스워드리스로 등록된 계정입니다");
+		}
+		
+		// 3. 비밀번호 검증 (평문 비밀번호와 비교)
 		if (!request.getPassword().equals(usersEntity.getAuth().getPassword())) {
 			throw new IllegalArgumentException("올바르지 않은 아이디/비밀번호입니다");
 		}
+		
+		
 		
 		return UsersDto.toDto(usersEntity);
 	}
@@ -221,6 +261,48 @@ public class UsersService {
 		public UsersInfoDto getUserByRequest(EmailFindRequest emailFindRequest) {
 			UsersEntity usersEntity = usersRepository.findByUsersNameAndPhoneNum(emailFindRequest.getUsersName(),emailFindRequest.getPhoneNum()).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 			return UsersInfoDto.toDto(usersEntity);
+		}
+
+		public UsersDto registerPasswordless(String authEmail, String passwordlessToken) throws JsonProcessingException, NoSuchAlgorithmException {
+			UsersEntity usersEntity = usersRepository.findByEmail(authEmail).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			AuthEntity authEntity = authRepository.findByUser(usersEntity);
+			
+			// 패스워드리스 등록 후 로그인 불가능하도록 해쉬화한 패스워드리스토큰을 비밀번호로 저장
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(passwordlessToken.getBytes(StandardCharsets.UTF_8));
+			StringBuilder sb = new StringBuilder();
+			for (byte b : hash) {
+			    sb.append(String.format("%02x", b));
+			}
+			String hexHash = sb.toString();
+			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+			String bcryptHash = encoder.encode(hexHash);
+			authEntity.setPassword(bcryptHash);
+			authEntity.setPasswordless(true);
+			return UsersDto.toDto(usersEntity);
+			
+			
+		}
+
+
+		public UsersDto loginPasswordless(String email, String passwordlessToken) throws NoSuchAlgorithmException {
+			UsersEntity usersEntity = usersRepository.findByEmail(email).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			AuthEntity authEntity = authRepository.findByUser(usersEntity);
+			
+			//패스워드리스 로그인 후 해쉬화한 패스워드리스토큰으로 재설정
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(passwordlessToken.getBytes(StandardCharsets.UTF_8));
+			StringBuilder sb = new StringBuilder();
+			for (byte b : hash) {
+			    sb.append(String.format("%02x", b));
+			}
+			String hexHash = sb.toString();
+			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+			String bcryptHash = encoder.encode(hexHash);
+			authEntity.setPassword(bcryptHash);
+			authEntity.setPasswordless(true);
+			
+			return UsersDto.toDto(usersEntity);
 		}
 		
 }

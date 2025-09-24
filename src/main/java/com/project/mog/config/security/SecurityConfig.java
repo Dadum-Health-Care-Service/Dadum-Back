@@ -53,6 +53,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth.requestMatchers(
 						"/api/v1/users/list",
 						"/api/v1/users/login",
+						"/api/v1/users/auth/passwordless/login",
 						"/api/v1/users/login/*",
 						"/api/v1/users/signup",
 						"/api/v1/routine/**",
@@ -61,6 +62,7 @@ public class SecurityConfig {
 						"/api/v1/users/send/*",
 						"/api/v1/posts/list",
 						"/api/v1/payments/**",
+						"/api/v1/health/**",
 						"/api/shop/**",
 						"/api/chat/**",  // 챗봇 API 허용
 						"/swagger-ui/*",
