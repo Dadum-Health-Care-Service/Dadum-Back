@@ -189,13 +189,11 @@ public class UsersController implements UsersControllerDocs{
 		
 		UsersDto usersDto = usersService.loginPasswordless(email,passwordlessToken);
 		Long usersId = usersDto.getUsersId();
-		String role = usersDto.getRole();
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		LoginResponse loginResponse = LoginResponse.builder()
 				.usersId(usersId)
 				.email(email)
-				.role(role)
 				.accessToken(accessToken)
 				.refreshToken(refreshToken)
 				.build();
@@ -212,6 +210,7 @@ public class UsersController implements UsersControllerDocs{
 		UsersDto usersDto = usersService.registerPasswordless(authEmail,passwordlessToken);
 		
 		return ResponseEntity.status(HttpStatus.OK).body(usersDto);
+	}
 
   @Transactional
   @PostMapping("role/request")
