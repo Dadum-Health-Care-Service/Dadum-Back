@@ -1,5 +1,6 @@
 package com.project.mog.controller.users;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -18,9 +19,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.mog.controller.auth.EmailFindRequest;
 import com.project.mog.controller.auth.PasswordCheckRequest;
 import com.project.mog.controller.auth.PasswordUpdateRequest;
+import com.project.mog.controller.auth.PasswordlessLoginRequest;
+import com.project.mog.controller.auth.PasswordlessRegisterRequest;
 import com.project.mog.controller.login.LoginRequest;
 import com.project.mog.controller.login.LoginResponse;
 import com.project.mog.controller.login.SocialLoginRequest;
@@ -172,4 +176,37 @@ public class UsersController implements UsersControllerDocs{
 		return ResponseEntity.status(HttpStatus.OK).body("비밀번호 찾기 이메일 전송 완료");
 	}
 	
+	@Transactional
+	@PostMapping("auth/passwordless/login")
+	public ResponseEntity<LoginResponse> loginPasswordless(@RequestBody PasswordlessLoginRequest passwordlessLoginRequest) throws NoSuchAlgorithmException{
+		String email = passwordlessLoginRequest.getEmail();
+		String passwordlessToken = passwordlessLoginRequest.getPasswordlessToken();
+		
+		UsersDto usersDto = usersService.loginPasswordless(email,passwordlessToken);
+		Long usersId = usersDto.getUsersId();
+		String role = usersDto.getRole();
+		String accessToken = jwtUtil.generateAccessToken(email);
+		String refreshToken = jwtUtil.generateRefreshToken(email);
+		LoginResponse loginResponse = LoginResponse.builder()
+				.usersId(usersId)
+				.email(email)
+				.role(role)
+				.accessToken(accessToken)
+				.refreshToken(refreshToken)
+				.build();
+		return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
+	}
+	
+	@Transactional
+	@PostMapping("auth/passwordless/register")
+	public ResponseEntity<UsersDto> registerPasswordless(@RequestHeader("Authorization") String authHeader, @RequestBody PasswordlessRegisterRequest passwordlessRegisterRequest) throws JsonProcessingException, NoSuchAlgorithmException{
+		String token = authHeader.replace("Bearer ", "");
+		String authEmail = jwtUtil.extractUserEmail(token);
+		String passwordlessToken = passwordlessRegisterRequest.getPasswordlessToken();
+		
+		UsersDto usersDto = usersService.registerPasswordless(authEmail,passwordlessToken);
+		
+		return ResponseEntity.status(HttpStatus.OK).body(usersDto);
+		
+	}
 }

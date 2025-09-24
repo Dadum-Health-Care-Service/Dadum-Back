@@ -1,6 +1,9 @@
 package com.project.mog.service.users;
 
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -10,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.mog.annotation.UserAuthorizationCheck;
 import com.project.mog.api.KakaoApiClient;
 import com.project.mog.controller.auth.EmailFindRequest;
@@ -23,6 +27,9 @@ import com.project.mog.repository.bios.BiosRepository;
 import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.repository.users.UsersRepository;
 import com.project.mog.service.bios.BiosDto;
+
+import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
@@ -36,7 +43,7 @@ public class UsersService {
 		
 		
 		
-		public UsersService(UsersRepository usersRepository, BiosRepository biosRepository,AuthRepository authRepository, KakaoApiClient kakaoApiClient, PasswordEncoder passwordEncoder ) {
+		public UsersService(UsersRepository usersRepository, BiosRepository biosRepository,AuthRepository authRepository, KakaoApiClient kakaoApiClient, PasswordEncoder passwordEncoder) {
 			this.usersRepository=usersRepository;
 			this.biosRepository=biosRepository;
 			this.authRepository=authRepository;
@@ -141,10 +148,19 @@ public class UsersService {
 		UsersEntity usersEntity = usersRepository.findByEmail(request.getEmail())
 			.orElseThrow(() -> new IllegalArgumentException("올바르지 않은 아이디/비밀번호입니다"));
 		
-		// 2. 비밀번호 검증 (평문 비밀번호와 비교)
+		System.out.println(usersEntity.getAuth().isPasswordless());
+		
+		// 2. 패스워드리스 등록됐을 경우 반환
+		if(usersEntity.getAuth().isPasswordless()==true) {
+			throw new AccessDeniedException("패스워드리스로 등록된 계정입니다");
+		}
+		
+		// 3. 비밀번호 검증 (평문 비밀번호와 비교)
 		if (!request.getPassword().equals(usersEntity.getAuth().getPassword())) {
 			throw new IllegalArgumentException("올바르지 않은 아이디/비밀번호입니다");
 		}
+		
+		
 		
 		return UsersDto.toDto(usersEntity);
 	}
@@ -201,6 +217,50 @@ public class UsersService {
 			UsersEntity usersEntity = usersRepository.findByUsersNameAndPhoneNum(emailFindRequest.getUsersName(),emailFindRequest.getPhoneNum()).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 			return UsersInfoDto.toDto(usersEntity);
 		}
+
+
+		public UsersDto registerPasswordless(String authEmail, String passwordlessToken) throws JsonProcessingException, NoSuchAlgorithmException {
+			UsersEntity usersEntity = usersRepository.findByEmail(authEmail).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			AuthEntity authEntity = authRepository.findByUser(usersEntity);
+			
+			// 패스워드리스 등록 후 로그인 불가능하도록 해쉬화한 패스워드리스토큰을 비밀번호로 저장
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(passwordlessToken.getBytes(StandardCharsets.UTF_8));
+			StringBuilder sb = new StringBuilder();
+			for (byte b : hash) {
+			    sb.append(String.format("%02x", b));
+			}
+			String hexHash = sb.toString();
+			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+			String bcryptHash = encoder.encode(hexHash);
+			authEntity.setPassword(bcryptHash);
+			authEntity.setPasswordless(true);
+			return UsersDto.toDto(usersEntity);
+			
+			
+		}
+
+
+		public UsersDto loginPasswordless(String email, String passwordlessToken) throws NoSuchAlgorithmException {
+			UsersEntity usersEntity = usersRepository.findByEmail(email).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			AuthEntity authEntity = authRepository.findByUser(usersEntity);
+			
+			//패스워드리스 로그인 후 해쉬화한 패스워드리스토큰으로 재설정
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(passwordlessToken.getBytes(StandardCharsets.UTF_8));
+			StringBuilder sb = new StringBuilder();
+			for (byte b : hash) {
+			    sb.append(String.format("%02x", b));
+			}
+			String hexHash = sb.toString();
+			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+			String bcryptHash = encoder.encode(hexHash);
+			authEntity.setPassword(bcryptHash);
+			authEntity.setPasswordless(true);
+			
+			return UsersDto.toDto(usersEntity);
+		}
+		
 
 
 		
