@@ -18,4 +18,6 @@ public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
     List<PaymentEntity> findByUser(UsersEntity user);
     
     List<PaymentEntity> findByPaymentStatus(String paymentStatus);
+    
+    List<PaymentEntity> deleteByUser(UsersEntity user);
 }

@@ -24,10 +24,16 @@ import com.project.mog.repository.auth.AuthEntity;
 import com.project.mog.repository.auth.AuthRepository;
 import com.project.mog.repository.bios.BiosEntity;
 import com.project.mog.repository.bios.BiosRepository;
+import com.project.mog.repository.like.LikeRepository;
+import com.project.mog.repository.payment.OrderRepository;
+import com.project.mog.repository.payment.PaymentRepository;
 import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.repository.users.UsersRepository;
 import com.project.mog.service.bios.BiosDto;
-
+import com.project.mog.service.comment.CommentService;
+import com.project.mog.service.healthConnect.HealthConnectService;
+import com.project.mog.service.post.PostService;
+import com.project.mog.service.routine.RoutineService;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,15 +46,27 @@ public class UsersService {
 		private AuthRepository authRepository;
 		private KakaoApiClient kakaoApiClient;
 		private PasswordEncoder passwordEncoder;
+		private HealthConnectService healthConnectService;
+		private PostService postService;
 		
 		
-		
-		public UsersService(UsersRepository usersRepository, BiosRepository biosRepository,AuthRepository authRepository, KakaoApiClient kakaoApiClient, PasswordEncoder passwordEncoder) {
+
+		public UsersService(UsersRepository usersRepository, 
+							BiosRepository biosRepository,
+							AuthRepository authRepository, 
+							KakaoApiClient kakaoApiClient, 
+							PasswordEncoder passwordEncoder, 
+							HealthConnectService healthConnectService,
+							PostService postService,
+							PaymentRepository paymentRepository,
+							OrderRepository orderRepository) {
 			this.usersRepository=usersRepository;
 			this.biosRepository=biosRepository;
 			this.authRepository=authRepository;
 			this.kakaoApiClient=kakaoApiClient;
 			this.passwordEncoder=passwordEncoder;
+			this.healthConnectService=healthConnectService;
+			this.postService=postService;
 		}
 
 
@@ -106,6 +124,10 @@ public class UsersService {
 			if (currentUser.getRole().equals("ADMIN") && targetUser.getRole().equals("ADMIN")) {
 				throw new AccessDeniedException("일반 관리자는 다른 관리자를 삭제할 수 없습니다");
 			}
+			
+			//user삭제 전 연결되어있는 데이터 먼저 삭제
+			healthConnectService.deleteHealthConnectDataByUsersId(usersId); //healthConnect삭제로 연결되어있는 heartRateData,StepData 함께 삭제
+			postService.deleteByUsersId(usersId); //post삭제로 연결되어있는 comment,like 함께 삭제
 			
 			usersRepository.deleteById(usersId);
 			return UsersInfoDto.toDto(targetUser);

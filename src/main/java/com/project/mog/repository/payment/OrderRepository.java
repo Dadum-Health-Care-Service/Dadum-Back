@@ -18,4 +18,6 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
     List<OrderEntity> findByOrderStatus(String orderStatus);
     
     List<OrderEntity> findByUserOrderByCreatedAtDesc(UsersEntity user);
+    
+    List<OrderEntity> deleteByUser(UsersEntity user);
 }
