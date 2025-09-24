@@ -13,6 +13,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
@@ -52,6 +53,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth.requestMatchers(
 						"/api/v1/users/list",
 						"/api/v1/users/login",
+						"/api/v1/users/auth/passwordless/login",
 						"/api/v1/users/login/*",
 						"/api/v1/users/signup",
 						"/api/v1/routine/**",
@@ -62,6 +64,7 @@ public class SecurityConfig {
 						"/api/v1/payments/**",
 						"/api/v1/health/**",
 						"/api/shop/**",
+						"/api/chat/**",  // 챗봇 API 허용
 						"/swagger-ui/*",
 						"/swagger-resources/**",
 						"/v3/api-docs/**",
@@ -120,10 +123,25 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000","https://mog-front-deploy-dev-git-main-oen0theras-projects.vercel.app/"));
+        
+        // 허용할 Origin 설정
+        config.setAllowedOrigins(List.of(
+            "http://localhost:3000",  // 기존 React 개발 서버
+            "http://localhost:5173",  // Vite 개발 서버 (챗봇용)
+            "http://localhost:5174"   // Vite 대체 포트 (챗봇용)
+        ));
+        
+        // 허용할 HTTP 메서드 설정
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        
+        // 허용할 헤더 설정
         config.setAllowedHeaders(List.of("*"));
+        
+        // 쿠키 및 인증 정보 허용
         config.setAllowCredentials(true);
+        
+        // Preflight 요청 캐시 시간 (초)
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

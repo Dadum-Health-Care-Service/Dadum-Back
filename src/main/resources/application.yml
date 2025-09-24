@@ -60,3 +60,8 @@ spring:
 jwttoken:
   secret-key: Nf/vIRqt0/bKThqJ6tOy2M9tqJX+rJxGG9HrZgsBrT4=
 
+openai:
+  api:
+    key: "${OPENAI_API_KEY:}"
+    timeout: 30
+

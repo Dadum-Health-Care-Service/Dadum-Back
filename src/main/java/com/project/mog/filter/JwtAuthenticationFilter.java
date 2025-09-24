@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.project.mog.security.UsersDetailService;
-import com.project.mog.security.UsersDetails;
 import com.project.mog.security.jwt.JwtUtil;
 
 import jakarta.servlet.FilterChain;
@@ -32,8 +31,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 									HttpServletResponse response, 
 									FilterChain filterChain)
 									throws ServletException, IOException {
+		String requestURI = request.getRequestURI();
+		System.out.println("JwtAuthenticationFilter doFilterInternal 실행됨: " + requestURI);
+		
 		String header = request.getHeader("Authorization");
-		System.out.println("JwtAuthenticationFilter doFilterInternal 실행됨: " + request.getRequestURI());
 		if(header!=null && header.startsWith("Bearer ")) {
 			String token = header.substring(7);
 			System.out.println("토큰: " + token);

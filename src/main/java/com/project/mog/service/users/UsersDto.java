@@ -51,11 +51,11 @@ public class UsersDto {
 					.email(email)
 					.profileImg(profileImg)
 					.phoneNum(phoneNum)
-					.role(role)
-					.regDate(regDate)
-					.updateDate(updateDate)
+					.role(role) 
+					.regDate(regDate) 
+					.updateDate(updateDate) 
 					.bios(Optional.ofNullable(biosDto).map(BiosDto::toEntity).orElse(null))
-					.auth(authDto.toEntity())
+					.auth(Optional.ofNullable(authDto).map(AuthDto::toEntity).orElse(null))
 					.build();
 		if(biosDto!=null) {
 			BiosEntity bEntity = biosDto.toEntity();
