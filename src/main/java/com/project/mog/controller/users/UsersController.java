@@ -218,16 +218,16 @@ public class UsersController implements UsersControllerDocs{
 		return ResponseEntity.status(HttpStatus.OK).body(usersDto);
 	}
 	
+	@Transactional
 	@PostMapping("send/password")
 	public ResponseEntity<String> sendPassword(@RequestBody SendPasswordRequest sendPasswordRequest) {
 		String email = sendPasswordRequest.getEmail();
 		String usersName = sendPasswordRequest.getUsersName();
-		UsersDto usersDto = usersService.getPassword(email);
-		String password = usersDto.getAuthDto().getPassword();
-		MailDto mail = mailService.createMail(password, usersName, email);
+		String tempPassword = usersService.updatePasswordToTemp(sendPasswordRequest);
+		MailDto mail = mailService.createMail(tempPassword, usersName, email);
 		mailService.sendMail(mail);
 		
-		return ResponseEntity.status(HttpStatus.OK).body("비밀번호 찾기 이메일 전송 완료");
+		return ResponseEntity.status(HttpStatus.OK).body("비밀번호 찾기 이메일 전송 완료 : "+tempPassword);
 	}
 	
 	@Transactional

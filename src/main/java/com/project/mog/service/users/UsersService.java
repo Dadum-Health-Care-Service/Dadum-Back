@@ -8,6 +8,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import com.project.mog.controller.auth.EmailFindRequest;
 import com.project.mog.controller.login.LoginRequest;
 import com.project.mog.controller.login.LoginResponse;
 import com.project.mog.controller.login.SocialLoginRequest;
+import com.project.mog.controller.mail.SendPasswordRequest;
 import com.project.mog.repository.auth.AuthEntity;
 import com.project.mog.repository.auth.AuthRepository;
 import com.project.mog.repository.bios.BiosEntity;
@@ -255,6 +257,19 @@ public class UsersService {
 			return UsersDto.toDto(usersEntity);
 		}
 
+		private String generateTempPassword() {
+			return UUID.randomUUID().toString().substring(0,8);
+		}
+		
+		public String updatePasswordToTemp(SendPasswordRequest request) {
+			UsersEntity user = usersRepository.findByEmail(request.getEmail())
+					.orElseThrow(()-> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			
+			String tempPassword = generateTempPassword();
+			AuthEntity authEntity = user.getAuth();
+			authEntity.setPassword(tempPassword);
+			return tempPassword;
+		}
 
 		public UsersInfoDto getUserByRequest(EmailFindRequest emailFindRequest) {
 			UsersEntity usersEntity = usersRepository.findByUsersNameAndPhoneNum(emailFindRequest.getUsersName(),emailFindRequest.getPhoneNum()).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
