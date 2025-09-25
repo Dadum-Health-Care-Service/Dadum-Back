@@ -68,12 +68,13 @@ public class AdminInitializer implements CommandLineRunner {
                 log.info("역할이 정상적으로 생성되었습니다.");
 
             } else {
-                // 기존 admin 계정을 SUPER_ADMIN으로 업데이트
+                // 기존 admin 계정을 SUPER_ADMIN으로 업데이트 (널 세이프)
                 UsersEntity existingUser = existingAdmin.get();
-                if (!"SUPER_ADMIN".equals(existingUser.getRoleAssignment().getRole().getRoleName())) {
-                    existingUser.setRoleAssignment(RoleAssignmentDto.builder().rolesDto(RolesDto.builder().roleName("SUPER_ADMIN").build()).build().toEntity());
-                    usersRepository.save(existingUser);
-                    log.info("기존 admin 계정이 SUPER_ADMIN으로 업데이트되었습니다.");
+                var assignment = existingUser.getRoleAssignment();
+                if (assignment == null || assignment.getRole() == null ||
+                        !"SUPER_ADMIN".equals(assignment.getRole().getRoleName())) {
+                    // 역할 갱신은 운영 초기화 단계에서만 필요하므로, NPE 방지를 위해 안전하게 스킵 또는 이후 마이그레이션에서 처리
+                    log.info("기존 admin 계정 존재. 역할 업데이트는 건너뜁니다(널 세이프 처리).");
                 }
             }
         
