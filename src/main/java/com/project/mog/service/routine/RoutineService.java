@@ -42,6 +42,19 @@ public class RoutineService {
 	private final RoutineEndTotalRepository routineEndTotalRepository;
 	private final RoutineEndDetailRepository routineEndDetailRepository;
 	private final RoutineResultRepository routineResultRepository;
+
+	public static class RoutineStartResponse {
+		public boolean success;
+		public String message;
+		public Long routineId;
+		public java.time.LocalDateTime startedAt;
+		public RoutineStartResponse(boolean success, String message, Long routineId, java.time.LocalDateTime startedAt) {
+			this.success = success;
+			this.message = message;
+			this.routineId = routineId;
+			this.startedAt = startedAt;
+		}
+	}
 	
 	public RoutineEntity toEntity(UsersEntity uEntity, RoutineDto routineDto) {
 		RoutineEntity rEntity = RoutineEntity.builder()
@@ -222,6 +235,19 @@ public class RoutineService {
 		RoutineEntity routineEntity = routineRepository.findByUsersIdAndSetId(userEntity.getUsersId(),setId).orElseThrow(()-> new IllegalArgumentException("루틴을 찾을 수 없습니다"));
 		routineRepository.delete(routineEntity);
 		return RoutineDto.toDto(routineEntity);
+	}
+
+	@Transactional
+	public RoutineStartResponse startRoutine(String authEmail, Long routineId) {
+		UsersEntity user = usersRepository.findByEmail(authEmail).orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다"));
+		RoutineEntity routine = routineRepository.findByUsersIdAndSetId(user.getUsersId(), routineId)
+				.orElseThrow(() -> new IllegalArgumentException("루틴을 찾을 수 없습니다"));
+		RoutineEndTotalEntity ret = RoutineEndTotalEntity.builder()
+				.tStart(java.time.LocalDateTime.now())
+				.routine(routine)
+				.build();
+		routineEndTotalRepository.save(ret);
+		return new RoutineStartResponse(true, "루틴이 시작되었습니다", routineId, ret.getTStart());
 	}
 	
 	public void deleteRoutineByUsersId(Long usersId) {

@@ -38,6 +38,8 @@ import com.project.mog.service.role.RoleAssignmentDto;
 import com.project.mog.service.role.RoleRequestDto;
 import com.project.mog.service.role.RolesDto;
 import com.project.mog.service.role.RolesService;
+import com.project.mog.service.users.HomeStatsDto;
+import com.project.mog.service.users.HomeRoutineItemDto;
 import com.project.mog.service.users.UsersDto;
 import com.project.mog.service.users.UsersInfoDto;
 import com.project.mog.service.users.UsersService;
@@ -155,6 +157,53 @@ public class UsersController implements UsersControllerDocs{
 		UsersDto usersDto = usersService.checkPassword(authEmail,password);
 		return ResponseEntity.status(HttpStatus.OK).body(usersDto);
 	}
+
+    // ===== Home endpoints (DB-backed) =====
+    @GetMapping("stats")
+    public ResponseEntity<HomeStatsDto> getUserStats(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            if (authHeader == null || authHeader.isBlank()) {
+                HomeStatsDto defaults = HomeStatsDto.builder()
+                        .consecutiveDays(0)
+                        .totalRoutines(0)
+                        .totalTime("0분")
+                        .consecutiveMessage("지금 시작해보세요")
+                        .routinesMessage("루틴을 만들어 보세요")
+                        .timeMessage("지금 시작해보세요")
+                        .build();
+                return ResponseEntity.ok(defaults);
+            }
+            String token = authHeader.replace("Bearer ", "");
+            String authEmail = jwtUtil.extractUserEmail(token);
+            HomeStatsDto stats = usersService.getHomeStats(authEmail);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            HomeStatsDto defaults = HomeStatsDto.builder()
+                    .consecutiveDays(0)
+                    .totalRoutines(0)
+                    .totalTime("0분")
+                    .consecutiveMessage("지금 시작해보세요")
+                    .routinesMessage("루틴을 만들어 보세요")
+                    .timeMessage("지금 시작해보세요")
+                    .build();
+            return ResponseEntity.ok(defaults);
+        }
+    }
+
+    @GetMapping("routines")
+    public ResponseEntity<java.util.List<HomeRoutineItemDto>> getUserRoutines(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            if (authHeader == null || authHeader.isBlank()) {
+                return ResponseEntity.ok(java.util.List.of());
+            }
+            String token = authHeader.replace("Bearer ", "");
+            String authEmail = jwtUtil.extractUserEmail(token);
+            java.util.List<HomeRoutineItemDto> routines = usersService.getHomeRoutines(authEmail);
+            return ResponseEntity.ok(routines);
+        } catch (Exception e) {
+            return ResponseEntity.ok(java.util.List.of());
+        }
+    }
 	
 	@Transactional
 	@PutMapping("auth/password/update")

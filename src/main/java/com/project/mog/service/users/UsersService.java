@@ -36,6 +36,10 @@ import com.project.mog.service.comment.CommentService;
 import com.project.mog.service.healthConnect.HealthConnectService;
 import com.project.mog.service.post.PostService;
 import com.project.mog.service.routine.RoutineService;
+import com.project.mog.repository.routine.RoutineRepository;
+import com.project.mog.repository.routine.RoutineEndTotalRepository;
+import com.project.mog.repository.routine.RoutineEndTotalEntity;
+import com.project.mog.repository.routine.RoutineEntity;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.project.mog.repository.role.RoleAssignmentEntity;
@@ -56,6 +60,8 @@ public class UsersService {
 		private RolesRepository rolesRepository;
 		private HealthConnectService healthConnectService;
 		private PostService postService;
+		private RoutineRepository routineRepository;
+		private RoutineEndTotalRepository routineEndTotalRepository;
 		
 		
 
@@ -65,10 +71,12 @@ public class UsersService {
 							KakaoApiClient kakaoApiClient, 
 							PasswordEncoder passwordEncoder, 
 							HealthConnectService healthConnectService,
-							PostService postService,
+						PostService postService,
 							PaymentRepository paymentRepository,
 							OrderRepository orderRepository,
-              RolesRepository rolesRepository) {
+						RolesRepository rolesRepository,
+						RoutineRepository routineRepository,
+						RoutineEndTotalRepository routineEndTotalRepository) {
 			this.usersRepository=usersRepository;
 			this.biosRepository=biosRepository;
 			this.authRepository=authRepository;
@@ -77,6 +85,8 @@ public class UsersService {
 			this.rolesRepository=rolesRepository;
 			this.healthConnectService=healthConnectService;
 			this.postService=postService;
+			this.routineRepository=routineRepository;
+			this.routineEndTotalRepository=routineEndTotalRepository;
 		}
 
 
@@ -291,6 +301,63 @@ public class UsersService {
 			authEntity.setPasswordless(true);
 			
 			return UsersDto.toDto(usersEntity);
+		}
+
+		// ===== Home APIs =====
+		public HomeStatsDto getHomeStats(String authEmail) {
+			UsersEntity user = usersRepository.findByEmail(authEmail).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			List<RoutineEntity> routines = routineRepository.findByUsersId(user.getUsersId());
+			int totalRoutines = routines.size();
+			long totalMinutes = routines.stream()
+					.flatMap(r -> routineEndTotalRepository.findAllBySetId(r.getSetId()).stream())
+					.mapToLong(ret -> java.time.Duration.between(ret.getTStart(), ret.getTEnd()).toMinutes())
+					.sum();
+			// 간단한 연속일수 계산: 오늘로부터 역순으로 한 건이라도 기록이 있으면 +1 (최대 30)
+			java.time.LocalDate today = java.time.LocalDate.now();
+			int consecutive = 0;
+			for (int i = 0; i < 30; i++) {
+				java.time.LocalDate d = today.minusDays(i);
+				boolean has = routines.stream().anyMatch(r -> routineEndTotalRepository.findAllBySetId(r.getSetId()).stream()
+						.anyMatch(ret -> ret.getTEnd() != null && ret.getTEnd().toLocalDate().equals(d)));
+				if (has) consecutive++; else break;
+			}
+			String totalTime = (totalMinutes / 60) > 0 ? (totalMinutes / 60) + "시간 " + (totalMinutes % 60) + "분" : totalMinutes + "분";
+			String consecutiveMessage = consecutive == 0 ? "지금 시작해보세요" : "연속 달성";
+			String routinesMessage = totalRoutines == 0 ? "루틴을 만들어 보세요" : "총 루틴";
+			String timeMessage = totalMinutes == 0 ? "지금 시작해보세요" : "총 시간";
+			return HomeStatsDto.builder()
+					.consecutiveDays(consecutive)
+					.totalRoutines(totalRoutines)
+					.totalTime(totalTime)
+					.consecutiveMessage(consecutiveMessage)
+					.routinesMessage(routinesMessage)
+					.timeMessage(timeMessage)
+					.build();
+		}
+
+		public java.util.List<HomeRoutineItemDto> getHomeRoutines(String authEmail) {
+			UsersEntity user = usersRepository.findByEmail(authEmail).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			List<RoutineEntity> routines = routineRepository.findByUsersId(user.getUsersId());
+			// 사용자 전체 루틴 로그가 하나도 없으면 빈 배열 반환 (프런트에 카드 숨김 신호)
+			boolean hasAnyLog = routines.stream()
+					.flatMap(r -> routineEndTotalRepository.findAllBySetId(r.getSetId()).stream())
+					.findAny()
+					.isPresent();
+			if (!hasAnyLog) {
+				return java.util.List.of();
+			}
+			return routines.stream().map(r -> {
+				List<RoutineEndTotalEntity> logs = routineEndTotalRepository.findAllBySetId(r.getSetId());
+				boolean completedToday = logs.stream().anyMatch(ret -> ret.getTEnd() != null && ret.getTEnd().toLocalDate().equals(java.time.LocalDate.now()));
+				return HomeRoutineItemDto.builder()
+					.id(r.getSetId())
+					.title(r.getRoutineName())
+					.time("15분")
+					.difficulty("보통")
+					.icon("💪")
+					.completed(completedToday)
+					.build();
+			}).collect(java.util.stream.Collectors.toList());
 		}
 		
 }
