@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,9 +45,10 @@ public class AdminInitializer implements CommandLineRunner {
                         .phoneNum("01000000000")
                         .build();
                 RolesEntity role = RolesEntity.builder().roleName("SUPER_ADMIN").roleDescription("SUPER_ADMIN").build();
+                rolesRepository.save(role);
                 RoleAssignmentEntity roleAssignment = RoleAssignmentEntity.builder().role(role).isActive(1L).assignedAt(LocalDateTime.now()).expiredAt(LocalDateTime.now().plusDays(30)).build();
                 roleAssignment.setUser(adminUser);
-                adminUser.setRoleAssignment(roleAssignment);
+                adminUser.setRoleAssignments(List.of(roleAssignment));
                 // AuthEntity 생성 (비밀번호 설정 - 평문)
                 AuthEntity adminAuth = new AuthEntity();
                 adminAuth.setPassword("admin1234");
@@ -70,7 +72,7 @@ public class AdminInitializer implements CommandLineRunner {
             } else {
                 // 기존 admin 계정을 SUPER_ADMIN으로 업데이트 (널 세이프)
                 UsersEntity existingUser = existingAdmin.get();
-                var assignment = existingUser.getRoleAssignment();
+                var assignment = existingUser.getRoleAssignments().get(0);
                 if (assignment == null || assignment.getRole() == null ||
                         !"SUPER_ADMIN".equals(assignment.getRole().getRoleName())) {
                     // 역할 갱신은 운영 초기화 단계에서만 필요하므로, NPE 방지를 위해 안전하게 스킵 또는 이후 마이그레이션에서 처리
