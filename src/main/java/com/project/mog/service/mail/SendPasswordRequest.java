@@ -1,4 +1,4 @@
-package com.project.mog.controller.mail;
+package com.project.mog.service.mail;
 
 import lombok.Builder;
 import lombok.Getter;

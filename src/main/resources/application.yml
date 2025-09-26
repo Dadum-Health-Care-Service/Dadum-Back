@@ -46,12 +46,11 @@ spring:
         jdbc:
           lob:
             non_contextual_creation: true
-
   mail:
     host: smtp.gmail.com
     port: 587
-    username: mogmyowngym@gmail.com
-    password: bsbv jxtd keou wxvy
+    username: "${GMAIL_USERNAME:}"
+    password: "${GMAIL_PASSWORD:}"
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
