@@ -1,7 +1,5 @@
 package com.project.mog.service.users;
 
-
-
 import java.time.LocalDateTime;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -23,7 +21,6 @@ import com.project.mog.controller.auth.EmailFindRequest;
 import com.project.mog.controller.login.LoginRequest;
 import com.project.mog.controller.login.LoginResponse;
 import com.project.mog.controller.login.SocialLoginRequest;
-import com.project.mog.controller.mail.SendPasswordRequest;
 import com.project.mog.repository.auth.AuthEntity;
 import com.project.mog.repository.auth.AuthRepository;
 import com.project.mog.repository.bios.BiosEntity;
@@ -36,6 +33,7 @@ import com.project.mog.repository.users.UsersRepository;
 import com.project.mog.service.bios.BiosDto;
 import com.project.mog.service.comment.CommentService;
 import com.project.mog.service.healthConnect.HealthConnectService;
+import com.project.mog.service.mail.SendPasswordRequest;
 import com.project.mog.service.post.PostService;
 import com.project.mog.service.routine.RoutineService;
 import org.springframework.security.crypto.bcrypt.BCrypt;
@@ -54,7 +52,6 @@ public class UsersService {
 		private BiosRepository biosRepository;
 		private AuthRepository authRepository;
 		private KakaoApiClient kakaoApiClient;
-		private PasswordEncoder passwordEncoder;
 		private RolesRepository rolesRepository;
 		private HealthConnectService healthConnectService;
 		private PostService postService;
@@ -75,7 +72,6 @@ public class UsersService {
 			this.biosRepository=biosRepository;
 			this.authRepository=authRepository;
 			this.kakaoApiClient=kakaoApiClient;
-			this.passwordEncoder=passwordEncoder;
 			this.rolesRepository=rolesRepository;
 			this.healthConnectService=healthConnectService;
 			this.postService=postService;
