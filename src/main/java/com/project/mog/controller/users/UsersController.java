@@ -358,6 +358,7 @@ public class UsersController {
 	}
 
 	@Transactional
+	@Operation(summary = "권한 삭제", description = "사용자 권한을 삭제합니다.")
 	@DeleteMapping("role/delete/{usersId}")
 	public ResponseEntity<List<RoleAssignmentDto>> deleteRoleAssignment(@RequestHeader("Authorization") String authHeader, @PathVariable Long usersId, @RequestBody RoleDeleteDto roleDeleteDto) {
 		String token = authHeader.replace("Bearer ", "");
@@ -367,6 +368,7 @@ public class UsersController {
 	}
 
 	@Transactional
+	@Operation(summary = "권한 허가", description = "사용자 권한을 허가합니다.")
 	@PutMapping("role/update/{usersId}")
 	public ResponseEntity<RoleAssignmentDto> permitRoleAssignment(@RequestHeader("Authorization") String authHeader, @PathVariable Long usersId, @RequestBody RolePermitDto rolePermitDto) {
 		String token = authHeader.replace("Bearer ", "");
