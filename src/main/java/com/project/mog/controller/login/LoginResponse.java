@@ -21,6 +21,8 @@ public class LoginResponse {
 	private String email;
 	@Schema(description = "role",example="USER")
 	private List<String> roles;
+	@Schema(description = "JWT 액세스 토큰")
 	private String accessToken;
+	@Schema(description = "JWT 리프레시 토큰")
 	private String refreshToken;
 }

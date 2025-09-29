@@ -7,6 +7,7 @@ import com.project.mog.repository.routine.RoutineEntity;
 import com.project.mog.repository.routine.SaveRoutineEntity;
 import com.project.mog.repository.routine.SaveRoutineSetEntity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,11 +19,14 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Schema(description = "저장된 루틴 DTO")
 public class SaveRoutineDto {
+	@Schema(hidden = true)
 	private long srId;
 	private long exId;
 	private String srName;
 	private long reps;
+	@Schema(hidden = true)
 	private long setId;
 	private List<SaveRoutineSetDto> set;
 	

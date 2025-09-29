@@ -34,7 +34,7 @@ public class AdminInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         
             // admin 계정이 이미 존재하는지 확인
-            var existingAdmin = usersRepository.findByEmail("admin@mog.com");
+            var existingAdmin = usersRepository.findByEmailWithRole("admin@mog.com");
             
             if (existingAdmin.isEmpty()) {
                 // admin 계정 생성 (SUPER_ADMIN 역할)

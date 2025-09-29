@@ -8,6 +8,7 @@ import com.project.mog.repository.routine.SaveRoutineEntity;
 import com.project.mog.service.bios.BiosDto;
 import com.project.mog.service.users.UsersDto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,8 +21,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class RoutineDto {
+	@Schema(hidden = true)
 	private long setId;
 	private String routineName;
+	@Schema(hidden = true)
 	private long usersId;
 	private List<SaveRoutineDto> saveRoutineDto;
 	
