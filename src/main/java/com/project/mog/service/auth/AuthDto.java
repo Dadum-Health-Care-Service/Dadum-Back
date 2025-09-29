@@ -17,10 +17,11 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class AuthDto {
-	@Schema(description = "authId",example="1")
+	@Schema(hidden = true)
 	private long authId;
 	@Schema(description = "password",example="testuser1")
 	private String password;
+	@Schema(hidden = true)
 	private LocalDateTime connectTime;
 	
 	public AuthEntity toEntity() {

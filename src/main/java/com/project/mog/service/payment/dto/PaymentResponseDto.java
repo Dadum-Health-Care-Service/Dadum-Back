@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.project.mog.repository.payment.PaymentEntity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,6 +18,7 @@ import lombok.Setter;
 @Builder
 public class PaymentResponseDto {
     
+    @Schema(hidden = true)
     private Long paymentId;
     private String merchantUid;
     private String impUid;
@@ -24,6 +26,7 @@ public class PaymentResponseDto {
     private Integer amount;
     private String paymentMethod;
     private String paymentStatus;
+    @Schema(hidden = true)
     private LocalDateTime createdAt;
     
     public static PaymentResponseDto fromEntity(PaymentEntity entity) {
