@@ -1,13 +1,12 @@
 package com.project.mog.service.users;
 
-
-
 import java.time.LocalDateTime;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,11 +33,17 @@ import com.project.mog.repository.users.UsersRepository;
 import com.project.mog.service.bios.BiosDto;
 import com.project.mog.service.comment.CommentService;
 import com.project.mog.service.healthConnect.HealthConnectService;
+import com.project.mog.service.mail.SendPasswordRequest;
 import com.project.mog.service.post.PostService;
 import com.project.mog.service.routine.RoutineService;
+import com.project.mog.repository.routine.RoutineRepository;
+import com.project.mog.repository.routine.RoutineEndTotalRepository;
+import com.project.mog.repository.routine.RoutineEndTotalEntity;
+import com.project.mog.repository.routine.RoutineEntity;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.project.mog.repository.role.RoleAssignmentEntity;
+import com.project.mog.repository.role.RoleAssignmentRepository;
 import com.project.mog.repository.role.RolesEntity;
 import com.project.mog.repository.role.RolesRepository;
 import com.project.mog.service.role.RoleAssignmentDto;
@@ -52,10 +57,12 @@ public class UsersService {
 		private BiosRepository biosRepository;
 		private AuthRepository authRepository;
 		private KakaoApiClient kakaoApiClient;
-		private PasswordEncoder passwordEncoder;
 		private RolesRepository rolesRepository;
 		private HealthConnectService healthConnectService;
 		private PostService postService;
+		private RoutineRepository routineRepository;
+		private RoutineEndTotalRepository routineEndTotalRepository;
+		private RoleAssignmentRepository roleAssignmentRepository;
 		
 		
 
@@ -65,18 +72,23 @@ public class UsersService {
 							KakaoApiClient kakaoApiClient, 
 							PasswordEncoder passwordEncoder, 
 							HealthConnectService healthConnectService,
-							PostService postService,
+						PostService postService,
 							PaymentRepository paymentRepository,
 							OrderRepository orderRepository,
-              RolesRepository rolesRepository) {
+						RolesRepository rolesRepository,
+						RoutineRepository routineRepository,
+						RoutineEndTotalRepository routineEndTotalRepository,
+						RoleAssignmentRepository roleAssignmentRepository) {
 			this.usersRepository=usersRepository;
 			this.biosRepository=biosRepository;
 			this.authRepository=authRepository;
 			this.kakaoApiClient=kakaoApiClient;
-			this.passwordEncoder=passwordEncoder;
 			this.rolesRepository=rolesRepository;
 			this.healthConnectService=healthConnectService;
 			this.postService=postService;
+			this.routineRepository=routineRepository;
+			this.routineEndTotalRepository=routineEndTotalRepository;
+			this.roleAssignmentRepository=roleAssignmentRepository;
 		}
 
 
@@ -92,27 +104,21 @@ public class UsersService {
 			
 			if(isDuplicated!=null) throw new IllegalArgumentException("중복된 아이디입니다");
 
-			
-			// 기본 역할을 USER로 설정
-			if (usersDto.getRoleAssignmentDto() == null || usersDto.getRoleAssignmentDto().getRolesDto().getRoleName().trim().isEmpty()) {
-				RoleAssignmentEntity roleAssignment = RoleAssignmentEntity.builder().isActive(1L).assignedAt(LocalDateTime.now()).expiredAt(LocalDateTime.now().plusDays(30)).build();
-				roleAssignment.setRole(role);
-				usersDto.setRoleAssignmentDto(RoleAssignmentDto.toDto(roleAssignment));
-			}
-			
-            // UsersEntity로 변환 (비밀번호 암호화 없이)
-            UsersEntity uEntity = usersDto.toEntity();
+			UsersEntity uEntity = usersDto.toEntity();
 
-            // ROLE 중복 생성 방지: 영속 ROLE로 강제 치환
-            if (uEntity.getRoleAssignment() != null && uEntity.getRoleAssignment().getRole() != null) {
-                String roleNameResolved = uEntity.getRoleAssignment().getRole().getRoleName();
-                RolesEntity persistentRole = rolesRepository.findByRoleName(roleNameResolved)
-                        .orElseThrow(() -> new IllegalArgumentException("역할이 존재하지 않습니다: " + roleNameResolved));
-                uEntity.getRoleAssignment().setRole(persistentRole);
-            }
+			RoleAssignmentEntity roleAssignment = RoleAssignmentEntity.builder()
+					.isActive(1L)
+					.assignedAt(LocalDateTime.now())
+					.expiredAt(LocalDateTime.now().plusDays(30))
+					.role(role)
+					.user(uEntity)
+					.build();
 
-            UsersEntity savedEntity = usersRepository.save(uEntity);
+			uEntity.setRoleAssignments(List.of(roleAssignment));
+			usersRepository.save(uEntity); // cascade로 RoleAssignment도 함께 저장
+
 			return UsersDto.toDto(uEntity);
+
 		}
 
 
@@ -124,30 +130,25 @@ public class UsersService {
 			return usersRepository.findByEmail(email).map(uEntity->UsersInfoDto.toDto(uEntity)).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 		}
 
-		public UsersInfoDto deleteUser(Long usersId, String authEmail) {
-			// 현재 로그인한 사용자 정보 조회
-			UsersEntity currentUser = usersRepository.findByEmail(authEmail)
-				.orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다"));
+	public UsersInfoDto deleteUser(Long usersId, String authEmail) {
+		// 권한 확인이 필요한 부분이므로 역할 정보까지 포함한 조회 사용
+		UsersEntity currentUser = usersRepository.findByEmailWithRole(authEmail)
+			.orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다"));
 			
 			// 삭제할 사용자 정보 조회
 			UsersEntity targetUser = usersRepository.findById(usersId)
 				.orElseThrow(() -> new RuntimeException("삭제할 사용자를 찾을 수 없습니다"));
 			
 			// 권한 검증: SUPER_ADMIN이거나 자기 자신인 경우만 삭제 가능
-			if (!currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
+			if (!currentUser.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
 				throw new AccessDeniedException("자기 자신만 삭제 가능합니다");
 			}
 			
 			// SUPER_ADMIN은 자기 자신을 삭제할 수 없음
-			if (currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() == usersId) {
+			if (currentUser.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN") && currentUser.getUsersId() == usersId) {
 				throw new AccessDeniedException("최고 관리자는 자기 자신을 삭제할 수 없습니다");
 			}
-			
-			// ADMIN은 다른 ADMIN을 삭제할 수 없음
-			if (currentUser.getRoleAssignment().getRole().getRoleName().equals("ADMIN") && targetUser.getRoleAssignment().getRole().getRoleName().equals("ADMIN")) {
-				throw new AccessDeniedException("일반 관리자는 다른 관리자를 삭제할 수 없습니다");
-			}
-			
+
 			//user삭제 전 연결되어있는 데이터 먼저 삭제
 			healthConnectService.deleteHealthConnectDataByUsersId(usersId); //healthConnect삭제로 연결되어있는 heartRateData,StepData 함께 삭제
 			postService.deleteByUsersId(usersId); //post삭제로 연결되어있는 comment,like 함께 삭제
@@ -157,34 +158,22 @@ public class UsersService {
 		}
 
 		public UsersInfoDto editUser(UsersInfoDto usersInfoDto, Long usersId, String authEmail) {		
-			// 현재 로그인한 사용자 정보 조회
-			UsersEntity currentUser = usersRepository.findByEmail(authEmail)
-				.orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다"));
-			
 			// 수정할 사용자 정보 조회
 			UsersEntity usersEntity = usersRepository.findById(usersId)
 				.orElseThrow(() -> new IllegalArgumentException(usersId + "가 존재하지 않습니다"));
-			
-			// 권한 검증: SUPER_ADMIN이거나 자기 자신인 경우만 수정 가능
-			if (!currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
-				throw new AccessDeniedException("자기 자신만 수정 가능합니다");
+			if (!authEmail.equals(usersEntity.getEmail())) {
+				throw new IllegalArgumentException("인가되지 않은 사용자입니다");
 			}
-			
-			// 역할 변경 권한 검증
-			if (usersInfoDto.getRoleAssignmentDto() != null && !usersInfoDto.getRoleAssignmentDto().getRolesDto().getRoleName().equals(usersEntity.getRoleAssignment().getRole().getRoleName())) {
-				// SUPER_ADMIN만 역할을 변경할 수 있음
-				if (!currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN")) {
-					throw new AccessDeniedException("역할 변경은 최고 관리자만 가능합니다");
-				}
-				
-				// SUPER_ADMIN은 다른 SUPER_ADMIN을 만들 수 없음
-				if (usersInfoDto.getRoleAssignmentDto().getRolesDto().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
-					throw new AccessDeniedException("다른 사용자를 최고 관리자로 만들 수 없습니다");
-				}
-			}
-			
 			BiosEntity biosEntity = biosRepository.findByUser(usersEntity);
-			
+			if(biosEntity==null&usersInfoDto.getBiosDto()!=null) {
+				BiosEntity newBiosEntity = BiosEntity.builder()
+						.age(usersInfoDto.getBiosDto().getAge())
+						.gender(usersInfoDto.getBiosDto().isGender())
+						.height(usersInfoDto.getBiosDto().getHeight())
+						.weight(usersInfoDto.getBiosDto().getWeight())
+						.build();
+				return usersInfoDto.applyTo(usersEntity, newBiosEntity);
+			}
 			return usersInfoDto.applyTo(usersEntity, biosEntity);
 		}
 
@@ -257,6 +246,19 @@ public class UsersService {
 			return UsersDto.toDto(usersEntity);
 		}
 
+		private String generateTempPassword() {
+			return UUID.randomUUID().toString().substring(0,8);
+		}
+		
+		public String updatePasswordToTemp(SendPasswordRequest request) {
+			UsersEntity user = usersRepository.findByEmail(request.getEmail())
+					.orElseThrow(()-> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			
+			String tempPassword = generateTempPassword();
+			AuthEntity authEntity = user.getAuth();
+			authEntity.setPassword(tempPassword);
+			return tempPassword;
+		}
 
 		public UsersInfoDto getUserByRequest(EmailFindRequest emailFindRequest) {
 			UsersEntity usersEntity = usersRepository.findByUsersNameAndPhoneNum(emailFindRequest.getUsersName(),emailFindRequest.getPhoneNum()).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
@@ -303,6 +305,63 @@ public class UsersService {
 			authEntity.setPasswordless(true);
 			
 			return UsersDto.toDto(usersEntity);
+		}
+
+		// ===== Home APIs =====
+		public HomeStatsDto getHomeStats(String authEmail) {
+			UsersEntity user = usersRepository.findByEmail(authEmail).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			List<RoutineEntity> routines = routineRepository.findByUsersId(user.getUsersId());
+			int totalRoutines = routines.size();
+			long totalMinutes = routines.stream()
+					.flatMap(r -> routineEndTotalRepository.findAllBySetId(r.getSetId()).stream())
+					.mapToLong(ret -> java.time.Duration.between(ret.getTStart(), ret.getTEnd()).toMinutes())
+					.sum();
+			// 간단한 연속일수 계산: 오늘로부터 역순으로 한 건이라도 기록이 있으면 +1 (최대 30)
+			java.time.LocalDate today = java.time.LocalDate.now();
+			int consecutive = 0;
+			for (int i = 0; i < 30; i++) {
+				java.time.LocalDate d = today.minusDays(i);
+				boolean has = routines.stream().anyMatch(r -> routineEndTotalRepository.findAllBySetId(r.getSetId()).stream()
+						.anyMatch(ret -> ret.getTEnd() != null && ret.getTEnd().toLocalDate().equals(d)));
+				if (has) consecutive++; else break;
+			}
+			String totalTime = (totalMinutes / 60) > 0 ? (totalMinutes / 60) + "시간 " + (totalMinutes % 60) + "분" : totalMinutes + "분";
+			String consecutiveMessage = consecutive == 0 ? "지금 시작해보세요" : "연속 달성";
+			String routinesMessage = totalRoutines == 0 ? "루틴을 만들어 보세요" : "총 루틴";
+			String timeMessage = totalMinutes == 0 ? "지금 시작해보세요" : "총 시간";
+			return HomeStatsDto.builder()
+					.consecutiveDays(consecutive)
+					.totalRoutines(totalRoutines)
+					.totalTime(totalTime)
+					.consecutiveMessage(consecutiveMessage)
+					.routinesMessage(routinesMessage)
+					.timeMessage(timeMessage)
+					.build();
+		}
+
+		public java.util.List<HomeRoutineItemDto> getHomeRoutines(String authEmail) {
+			UsersEntity user = usersRepository.findByEmail(authEmail).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			List<RoutineEntity> routines = routineRepository.findByUsersId(user.getUsersId());
+			// 사용자 전체 루틴 로그가 하나도 없으면 빈 배열 반환 (프런트에 카드 숨김 신호)
+			boolean hasAnyLog = routines.stream()
+					.flatMap(r -> routineEndTotalRepository.findAllBySetId(r.getSetId()).stream())
+					.findAny()
+					.isPresent();
+			if (!hasAnyLog) {
+				return java.util.List.of();
+			}
+			return routines.stream().map(r -> {
+				List<RoutineEndTotalEntity> logs = routineEndTotalRepository.findAllBySetId(r.getSetId());
+				boolean completedToday = logs.stream().anyMatch(ret -> ret.getTEnd() != null && ret.getTEnd().toLocalDate().equals(java.time.LocalDate.now()));
+				return HomeRoutineItemDto.builder()
+					.id(r.getSetId())
+					.title(r.getRoutineName())
+					.time("15분")
+					.difficulty("보통")
+					.icon("💪")
+					.completed(completedToday)
+					.build();
+			}).collect(java.util.stream.Collectors.toList());
 		}
 		
 }

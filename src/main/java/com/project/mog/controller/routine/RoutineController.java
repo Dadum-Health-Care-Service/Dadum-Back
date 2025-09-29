@@ -19,8 +19,6 @@ import com.project.mog.service.routine.RoutineDto;
 import com.project.mog.service.routine.RoutineEndTotalDto;
 import com.project.mog.service.routine.RoutineService;
 import com.project.mog.service.routine.SaveRoutineDto;
-import com.project.mog.service.users.UsersDto;
-
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -51,6 +49,17 @@ public class RoutineController {
 		String authEmail = jwtUtil.extractUserEmail(token);
 		List<RoutineDto> routines = routineService.getAllRoutines(authEmail);
 		return ResponseEntity.ok(routines);
+	}
+
+	// Start routine (DB-backed)
+	@PostMapping("{routineId}/start")
+	public ResponseEntity<RoutineService.RoutineStartResponse> startRoutine(
+			@RequestHeader("Authorization") String authHeader,
+			@PathVariable Long routineId) {
+		String token = authHeader.replace("Bearer ", "");
+		String authEmail = jwtUtil.extractUserEmail(token);
+		RoutineService.RoutineStartResponse res = routineService.startRoutine(authEmail, routineId);
+		return ResponseEntity.ok(res);
 	}
 	
 	@GetMapping("{setId}")

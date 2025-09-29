@@ -1,7 +1,9 @@
 package com.project.mog.service.users;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.project.mog.repository.auth.AuthEntity;
 import com.project.mog.repository.bios.BiosEntity;
@@ -30,7 +32,7 @@ public class UsersDto {
 	@Nullable
 	private BiosDto biosDto;
 	private AuthDto authDto;
-	private RoleAssignmentDto roleAssignmentDto;
+	private List<RoleAssignmentDto> roleAssignmentDto;
 	@Schema(description = "usersName",example="테스트유저")
 	private String usersName;
 	@Schema(description = "nickName",example="테스트닉네임")
@@ -55,7 +57,7 @@ public class UsersDto {
 					.email(email)
 					.profileImg(profileImg)
 					.phoneNum(phoneNum)
-					.roleAssignment(roleAssignmentDto.toEntity()) 
+					.roleAssignments(roleAssignmentDto==null?List.of():roleAssignmentDto.stream().map(RoleAssignmentDto::toEntity).collect(Collectors.toList())) 
 					.regDate(regDate) 
 					.updateDate(updateDate) 
 					.bios(Optional.ofNullable(biosDto).map(BiosDto::toEntity).orElse(null))
@@ -72,9 +74,9 @@ public class UsersDto {
 			uEntity.setAuth(aEntity);
 		}
 		if(roleAssignmentDto!=null) {
-			RoleAssignmentEntity rEntity = roleAssignmentDto.toEntity();
-			rEntity.setUser(uEntity);
-			uEntity.setRoleAssignment(rEntity);
+			List<RoleAssignmentEntity> rEntity = roleAssignmentDto.stream().map(RoleAssignmentDto::toEntity).collect(Collectors.toList());
+			rEntity.forEach(r->r.setUser(uEntity));
+			uEntity.setRoleAssignments(rEntity);
 		}
 		return uEntity;
 	}
@@ -88,7 +90,7 @@ public class UsersDto {
 				.email(uEntity.getEmail())
 				.profileImg(uEntity.getProfileImg())
 				.phoneNum(uEntity.getPhoneNum())
-				.roleAssignmentDto(RoleAssignmentDto.toDto(uEntity.getRoleAssignment()))
+				.roleAssignmentDto(RoleAssignmentDto.toDto(uEntity.getRoleAssignments()))
 				.regDate(uEntity.getRegDate())
 				.updateDate(uEntity.getUpdateDate())
 				.biosDto(BiosDto.toDto(uEntity.getBios()))

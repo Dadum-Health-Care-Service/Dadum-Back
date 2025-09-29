@@ -1,6 +1,8 @@
 package com.project.mog.service.role;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.project.mog.repository.role.RoleAssignmentEntity;
 
@@ -30,6 +32,10 @@ public class RoleAssignmentDto {
                 .expiredAt(expiredAt)
                 .role(rolesDto.toEntity())
                 .build();
+    }
+
+    public static List<RoleAssignmentDto> toDto(List<RoleAssignmentEntity> rEntity) {
+        return rEntity.stream().map(RoleAssignmentDto::toDto).collect(Collectors.toList());
     }
 
     public static RoleAssignmentDto toDto(RoleAssignmentEntity rEntity) {

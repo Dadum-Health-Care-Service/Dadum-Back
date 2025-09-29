@@ -2,6 +2,7 @@ package com.project.mog.controller.users;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,14 +25,19 @@ import com.project.mog.controller.auth.PasswordlessRegisterRequest;
 import com.project.mog.controller.login.LoginRequest;
 import com.project.mog.controller.login.LoginResponse;
 import com.project.mog.controller.login.SocialLoginRequest;
-import com.project.mog.controller.mail.SendPasswordRequest;
+import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.security.jwt.JwtUtil;
 import com.project.mog.service.mail.MailDto;
 import com.project.mog.service.mail.MailService;
+import com.project.mog.service.mail.SendPasswordRequest;
 import com.project.mog.service.role.RoleAssignmentDto;
+import com.project.mog.service.role.RoleDeleteDto;
+import com.project.mog.service.role.RolePermitDto;
 import com.project.mog.service.role.RoleRequestDto;
 import com.project.mog.service.role.RolesDto;
 import com.project.mog.service.role.RolesService;
+import com.project.mog.service.users.HomeStatsDto;
+import com.project.mog.service.users.HomeRoutineItemDto;
 import com.project.mog.service.users.UsersDto;
 import com.project.mog.service.users.UsersInfoDto;
 import com.project.mog.service.users.UsersService;
@@ -143,7 +149,7 @@ public class UsersController {
 		
 		long usersId = usersDto.getUsersId();
 		String email = usersDto.getEmail();
-		String role = usersDto.getRoleAssignmentDto().getRolesDto().getRoleName();
+		List<String> roles = usersDto.getRoleAssignmentDto().stream().map(RoleAssignmentDto::getRolesDto).map(RolesDto::getRoleName).collect(Collectors.toList());
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		
@@ -151,7 +157,7 @@ public class UsersController {
 		LoginResponse loginResponse = LoginResponse.builder()
 											.usersId(usersId)
 											.email(email)
-											.role(role)
+											.roles(roles)
 											.accessToken(accessToken)
 											.refreshToken(refreshToken)
 											.build();
@@ -170,14 +176,14 @@ public class UsersController {
 		UsersDto usersDto = usersService.socialLogin(request);
 		long usersId = usersDto.getUsersId();
 		String email = usersDto.getEmail();
-		String role = usersDto.getRoleAssignmentDto().getRolesDto().getRoleName();
+		List<String> roles = usersDto.getRoleAssignmentDto().stream().map(RoleAssignmentDto::getRolesDto).map(RolesDto::getRoleName).collect(Collectors.toList());
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		
 		LoginResponse loginResponse = LoginResponse.builder()
 										.usersId(usersId)
 										.email(email)
-										.role(role)
+										.roles(roles)
 										.accessToken(accessToken)
 										.refreshToken(refreshToken)
 										.build();
@@ -211,6 +217,53 @@ public class UsersController {
 		UsersDto usersDto = usersService.checkPassword(authEmail,password);
 		return ResponseEntity.status(HttpStatus.OK).body(usersDto);
 	}
+
+    // ===== Home endpoints (DB-backed) =====
+    @GetMapping("stats")
+    public ResponseEntity<HomeStatsDto> getUserStats(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            if (authHeader == null || authHeader.isBlank()) {
+                HomeStatsDto defaults = HomeStatsDto.builder()
+                        .consecutiveDays(0)
+                        .totalRoutines(0)
+                        .totalTime("0분")
+                        .consecutiveMessage("지금 시작해보세요")
+                        .routinesMessage("루틴을 만들어 보세요")
+                        .timeMessage("지금 시작해보세요")
+                        .build();
+                return ResponseEntity.ok(defaults);
+            }
+            String token = authHeader.replace("Bearer ", "");
+            String authEmail = jwtUtil.extractUserEmail(token);
+            HomeStatsDto stats = usersService.getHomeStats(authEmail);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            HomeStatsDto defaults = HomeStatsDto.builder()
+                    .consecutiveDays(0)
+                    .totalRoutines(0)
+                    .totalTime("0분")
+                    .consecutiveMessage("지금 시작해보세요")
+                    .routinesMessage("루틴을 만들어 보세요")
+                    .timeMessage("지금 시작해보세요")
+                    .build();
+            return ResponseEntity.ok(defaults);
+        }
+    }
+
+    @GetMapping("routines")
+    public ResponseEntity<java.util.List<HomeRoutineItemDto>> getUserRoutines(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            if (authHeader == null || authHeader.isBlank()) {
+                return ResponseEntity.ok(java.util.List.of());
+            }
+            String token = authHeader.replace("Bearer ", "");
+            String authEmail = jwtUtil.extractUserEmail(token);
+            java.util.List<HomeRoutineItemDto> routines = usersService.getHomeRoutines(authEmail);
+            return ResponseEntity.ok(routines);
+        } catch (Exception e) {
+            return ResponseEntity.ok(java.util.List.of());
+        }
+    }
 	
 	@Transactional
 	@PutMapping("auth/password/update")
@@ -231,6 +284,7 @@ public class UsersController {
 		return ResponseEntity.status(HttpStatus.OK).body(usersDto);
 	}
 	
+	@Transactional
 	@PostMapping("send/password")
 	@Operation(summary = "비밀번호 찾기", description = "이메일로 비밀번호를 전송합니다.")
 	@ApiResponses({
@@ -241,12 +295,11 @@ public class UsersController {
 	public ResponseEntity<String> sendPassword(@RequestBody SendPasswordRequest sendPasswordRequest) {
 		String email = sendPasswordRequest.getEmail();
 		String usersName = sendPasswordRequest.getUsersName();
-		UsersDto usersDto = usersService.getPassword(email);
-		String password = usersDto.getAuthDto().getPassword();
-		MailDto mail = mailService.createMail(password, usersName, email);
+		String tempPassword = usersService.updatePasswordToTemp(sendPasswordRequest);
+		MailDto mail = mailService.createMail(tempPassword, usersName, email);
 		mailService.sendMail(mail);
 		
-		return ResponseEntity.status(HttpStatus.OK).body("비밀번호 찾기 이메일 전송 완료");
+		return ResponseEntity.status(HttpStatus.OK).body("비밀번호 찾기 이메일 전송 완료 : "+tempPassword);
 	}
 	
 	@Transactional
@@ -263,13 +316,13 @@ public class UsersController {
 		
 		UsersDto usersDto = usersService.loginPasswordless(email,passwordlessToken);
 		Long usersId = usersDto.getUsersId();
-		String role = usersDto.getRoleAssignmentDto().getRolesDto().getRoleName();
+		List<String> roles = usersDto.getRoleAssignmentDto().stream().map((assign)->assign.getRolesDto().getRoleName()).toList();
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		LoginResponse loginResponse = LoginResponse.builder()
 				.usersId(usersId)
 				.email(email)
-				.role(role)
+				.roles(roles)
 				.accessToken(accessToken)
 				.refreshToken(refreshToken)
 				.build();
@@ -297,10 +350,28 @@ public class UsersController {
   @Transactional
   @Operation(summary = "권한 요청", description = "사용자 권한 변경을 요청합니다.")
   @PostMapping("role/request")
-	public ResponseEntity<RolesDto> requestRoleAssignment(@RequestHeader("Authorization") String authHeader, @RequestBody RoleRequestDto roleRequestDto) {
+	public ResponseEntity<List<RoleAssignmentDto>> requestRoleAssignment(@RequestHeader("Authorization") String authHeader, @RequestBody RoleRequestDto roleRequestDto) {
 		String token = authHeader.replace("Bearer ", "");
 		String authEmail = jwtUtil.extractUserEmail(token);
-		RoleAssignmentDto roleAssignmentDto = rolesService.requestRoleAssignment(roleRequestDto,authEmail);
-		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto.getRolesDto());
+		List<RoleAssignmentDto> roleAssignmentDto = rolesService.requestRoleAssignment(roleRequestDto,authEmail);
+		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
+	}
+
+	@Transactional
+	@DeleteMapping("role/delete/{usersId}")
+	public ResponseEntity<List<RoleAssignmentDto>> deleteRoleAssignment(@RequestHeader("Authorization") String authHeader, @PathVariable Long usersId, @RequestBody RoleDeleteDto roleDeleteDto) {
+		String token = authHeader.replace("Bearer ", "");
+		String authEmail = jwtUtil.extractUserEmail(token);
+		List<RoleAssignmentDto> roleAssignmentDto = rolesService.deleteRoleAssignment(roleDeleteDto,usersId,authEmail);
+		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
+	}
+
+	@Transactional
+	@PutMapping("role/update/{usersId}")
+	public ResponseEntity<RoleAssignmentDto> permitRoleAssignment(@RequestHeader("Authorization") String authHeader, @PathVariable Long usersId, @RequestBody RolePermitDto rolePermitDto) {
+		String token = authHeader.replace("Bearer ", "");
+		String authEmail = jwtUtil.extractUserEmail(token);
+		RoleAssignmentDto roleAssignmentDto = rolesService.permitRoleAssignment(rolePermitDto,usersId,authEmail);
+		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
 	}
 }
