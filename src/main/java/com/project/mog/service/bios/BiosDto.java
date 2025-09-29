@@ -20,7 +20,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class BiosDto {
-	@Schema(description = "bioId",example="1")
+	@Schema(hidden = true)
 	private long bioId;
 	@Schema(description = "age",example="25")
 	private long age;

@@ -32,7 +32,7 @@ public class UsersDto {
 	@Nullable
 	private BiosDto biosDto;
 	private AuthDto authDto;
-	private List<RoleAssignmentDto> roleAssignmentDto;
+	private List<RoleAssignmentDto> roleAssignments;
 	@Schema(description = "usersName",example="테스트유저")
 	private String usersName;
 	@Schema(description = "nickName",example="테스트닉네임")
@@ -55,7 +55,7 @@ public class UsersDto {
 					.email(email)
 					.profileImg(profileImg)
 					.phoneNum(phoneNum)
-					.roleAssignments(roleAssignmentDto==null?List.of():roleAssignmentDto.stream().map(RoleAssignmentDto::toEntity).collect(Collectors.toList())) 
+					.roleAssignments(roleAssignments==null?List.of():roleAssignments.stream().map(RoleAssignmentDto::toEntity).collect(Collectors.toList())) 
 					.regDate(regDate) 
 					.updateDate(updateDate) 
 					.bios(Optional.ofNullable(biosDto).map(BiosDto::toEntity).orElse(null))
@@ -71,8 +71,8 @@ public class UsersDto {
 			aEntity.setUser(uEntity);
 			uEntity.setAuth(aEntity);
 		}
-		if(roleAssignmentDto!=null) {
-			List<RoleAssignmentEntity> rEntity = roleAssignmentDto.stream().map(RoleAssignmentDto::toEntity).collect(Collectors.toList());
+		if(roleAssignments!=null) {
+			List<RoleAssignmentEntity> rEntity = roleAssignments.stream().map(RoleAssignmentDto::toEntity).collect(Collectors.toList());
 			rEntity.forEach(r->r.setUser(uEntity));
 			uEntity.setRoleAssignments(rEntity);
 		}
@@ -88,7 +88,7 @@ public class UsersDto {
 				.email(uEntity.getEmail())
 				.profileImg(uEntity.getProfileImg())
 				.phoneNum(uEntity.getPhoneNum())
-				.roleAssignmentDto(RoleAssignmentDto.toDto(uEntity.getRoleAssignments()))
+				.roleAssignments(RoleAssignmentDto.toDto(uEntity.getRoleAssignments()))
 				.regDate(uEntity.getRegDate())
 				.updateDate(uEntity.getUpdateDate())
 				.biosDto(BiosDto.toDto(uEntity.getBios()))

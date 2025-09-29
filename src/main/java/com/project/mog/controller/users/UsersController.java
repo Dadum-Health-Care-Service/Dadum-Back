@@ -39,6 +39,7 @@ import com.project.mog.service.role.RoleAssignmentDto;
 import com.project.mog.service.role.RoleDeleteDto;
 import com.project.mog.service.role.RolePermitDto;
 import com.project.mog.service.role.RoleRequestDto;
+import com.project.mog.service.role.RoleResponseDto;
 import com.project.mog.service.role.RolesDto;
 import com.project.mog.service.role.RolesService;
 import com.project.mog.service.users.HomeStatsDto;
@@ -109,7 +110,7 @@ public class UsersController implements UsersControllerDocs{
 		
 		long usersId = usersDto.getUsersId();
 		String email = usersDto.getEmail();
-		List<String> roles = usersDto.getRoleAssignmentDto().stream().map(RoleAssignmentDto::getRolesDto).map(RolesDto::getRoleName).collect(Collectors.toList());
+		List<String> roles = usersDto.getRoleAssignments().stream().map(RoleAssignmentDto::getRolesDto).map(RolesDto::getRoleName).collect(Collectors.toList());
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		
@@ -130,7 +131,7 @@ public class UsersController implements UsersControllerDocs{
 		UsersDto usersDto = usersService.socialLogin(request);
 		long usersId = usersDto.getUsersId();
 		String email = usersDto.getEmail();
-		List<String> roles = usersDto.getRoleAssignmentDto().stream().map(RoleAssignmentDto::getRolesDto).map(RolesDto::getRoleName).collect(Collectors.toList());
+		List<String> roles = usersDto.getRoleAssignments().stream().map(RoleAssignmentDto::getRolesDto).map(RolesDto::getRoleName).collect(Collectors.toList());
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		
@@ -241,6 +242,7 @@ public class UsersController implements UsersControllerDocs{
 		
 		UsersDto usersDto = usersService.loginPasswordless(email,passwordlessToken);
 		Long usersId = usersDto.getUsersId();
+		List<String> roles = usersDto.getRoleAssignments().stream().map((assign)->assign.getRolesDto().getRoleName()).toList();
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		LoginResponse loginResponse = LoginResponse.builder()
@@ -254,7 +256,7 @@ public class UsersController implements UsersControllerDocs{
 	
 	@Transactional
 	@PostMapping("auth/passwordless/register")
-	public ResponseEntity<UsersDto> registerPasswordless(@RequestHeader("Authorization") String authHeader, @RequestBody PasswordlessRegisterRequest passwordlessRegisterRequest) throws JsonProcessingException, NoSuchAlgorithmException{
+	public ResponseEntity<UsersDto> registerPasswordless(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader, @RequestBody PasswordlessRegisterRequest passwordlessRegisterRequest) throws JsonProcessingException, NoSuchAlgorithmException{
 		String token = authHeader.replace("Bearer ", "");
 		String authEmail = jwtUtil.extractUserEmail(token);
 		String passwordlessToken = passwordlessRegisterRequest.getPasswordlessToken();
@@ -264,9 +266,11 @@ public class UsersController implements UsersControllerDocs{
 		return ResponseEntity.status(HttpStatus.OK).body(usersDto);
 	}
 
-  @Transactional
-  @PostMapping("role/request")
-	public ResponseEntity<List<RoleAssignmentDto>> requestRoleAssignment(@RequestHeader("Authorization") String authHeader, @RequestBody RoleRequestDto roleRequestDto) {
+
+	@Transactional
+	@Operation(summary = "권한 요청", description = "사용자 권한 변경을 요청합니다.")
+	@PostMapping("role/request")
+	public ResponseEntity<List<RoleAssignmentDto>> requestRoleAssignment(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader, @RequestBody RoleRequestDto roleRequestDto) {
 		String token = authHeader.replace("Bearer ", "");
 		String authEmail = jwtUtil.extractUserEmail(token);
 		List<RoleAssignmentDto> roleAssignmentDto = rolesService.requestRoleAssignment(roleRequestDto,authEmail);
@@ -275,7 +279,7 @@ public class UsersController implements UsersControllerDocs{
 
 	@Transactional
 	@DeleteMapping("role/delete/{usersId}")
-	public ResponseEntity<List<RoleAssignmentDto>> deleteRoleAssignment(@RequestHeader("Authorization") String authHeader, @PathVariable Long usersId, @RequestBody RoleDeleteDto roleDeleteDto) {
+	public ResponseEntity<List<RoleAssignmentDto>> deleteRoleAssignment(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader, @PathVariable Long usersId, @RequestBody RoleDeleteDto roleDeleteDto) {
 		String token = authHeader.replace("Bearer ", "");
 		String authEmail = jwtUtil.extractUserEmail(token);
 		List<RoleAssignmentDto> roleAssignmentDto = rolesService.deleteRoleAssignment(roleDeleteDto,usersId,authEmail);
@@ -284,10 +288,31 @@ public class UsersController implements UsersControllerDocs{
 
 	@Transactional
 	@PutMapping("role/update/{usersId}")
-	public ResponseEntity<RoleAssignmentDto> permitRoleAssignment(@RequestHeader("Authorization") String authHeader, @PathVariable Long usersId, @RequestBody RolePermitDto rolePermitDto) {
+	public ResponseEntity<RoleAssignmentDto> permitRoleAssignment(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader, @PathVariable Long usersId, @RequestBody RolePermitDto rolePermitDto) {
 		String token = authHeader.replace("Bearer ", "");
 		String authEmail = jwtUtil.extractUserEmail(token);
 		RoleAssignmentDto roleAssignmentDto = rolesService.permitRoleAssignment(rolePermitDto,usersId,authEmail);
 		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
 	}
+
+	@Transactional
+	@Operation(summary = "전체 권한 조회", description = "전체 사용자의 권한을 조회합니다.")
+	@GetMapping("role/list")
+	public ResponseEntity<List<UsersDto>> getRoleAssignment(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader) {
+		String token = authHeader.replace("Bearer ", "");
+		String authEmail = jwtUtil.extractUserEmail(token);
+		List<UsersDto> usersDto = rolesService.getRoleAssignment(authEmail);
+		return ResponseEntity.status(HttpStatus.OK).body(usersDto);
+	}
+
+	@Transactional
+	@Operation(summary = "전체 권한 요청 조회", description = "전체 사용자의 권한 요청을 조회합니다.")
+	@GetMapping("role/request/list")
+	public ResponseEntity<List<RoleResponseDto>> getRoleRequest(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader) {
+		String token = authHeader.replace("Bearer ", "");
+		String authEmail = jwtUtil.extractUserEmail(token);
+		List<RoleResponseDto> roleAssignmentDto = rolesService.getRoleRequests(authEmail);
+		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
+	}
+
 }
