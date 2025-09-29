@@ -43,7 +43,6 @@ public class UsersDto {
 	private String profileImg;
 	@Schema(description = "phoneNum", example="01012345678")
 	private String phoneNum;
-	
 	@Schema(hidden = true)
 	private LocalDateTime regDate;
 	@Schema(hidden = true)
@@ -57,7 +56,6 @@ public class UsersDto {
 					.email(email)
 					.profileImg(profileImg)
 					.phoneNum(phoneNum)
-					.roleAssignments(roleAssignments==null?List.of():roleAssignments.stream().map(RoleAssignmentDto::toEntity).collect(Collectors.toList())) 
 					.regDate(regDate) 
 					.updateDate(updateDate) 
 					.bios(Optional.ofNullable(biosDto).map(BiosDto::toEntity).orElse(null))
@@ -76,7 +74,6 @@ public class UsersDto {
 		if(roleAssignments!=null) {
 			List<RoleAssignmentEntity> rEntity = roleAssignments.stream().map(RoleAssignmentDto::toEntity).collect(Collectors.toList());
 			rEntity.forEach(r->r.setUser(uEntity));
-			uEntity.setRoleAssignments(rEntity);
 		}
 		return uEntity;
 	}
