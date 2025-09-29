@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.project.mog.repository.payment.OrderEntity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,8 +16,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Schema(description = "주문 응답 DTO")
 public class OrderResponseDto {
     
+    @Schema(hidden = true)
     private Long orderId;
     private String orderNumber;
     private String productName;
@@ -27,11 +30,15 @@ public class OrderResponseDto {
     private String shippingAddress;
     // shippingPhone은 UsersEntity.phoneNum 사용 (기본값)
     private String orderNotes;
+    @Schema(hidden = true)
     private LocalDateTime createdAt;
+    @Schema(hidden = true)
     private LocalDateTime updatedAt;
     
     // 사용자 정보 추가
+    @Schema(hidden = true)
     private String buyerName;      // UsersEntity.usersName
+    @Schema(hidden = true)
     private String buyerPhone;     // UsersEntity.phoneNum
     
     public static OrderResponseDto fromEntity(OrderEntity entity) {

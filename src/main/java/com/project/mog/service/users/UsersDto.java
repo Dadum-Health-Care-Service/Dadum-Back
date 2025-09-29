@@ -27,7 +27,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class UsersDto {
-	@Schema(description = "usersId",example="1")
+	@Schema(hidden = true)
 	private long usersId;
 	@Nullable
 	private BiosDto biosDto;
@@ -44,7 +44,9 @@ public class UsersDto {
 	@Schema(description = "phoneNum", example="01012345678")
 	private String phoneNum;
 	
+	@Schema(hidden = true)
 	private LocalDateTime regDate;
+	@Schema(hidden = true)
 	private LocalDateTime updateDate;
 	
 	public UsersEntity toEntity() {
