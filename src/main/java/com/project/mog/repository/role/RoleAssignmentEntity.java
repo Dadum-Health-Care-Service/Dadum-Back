@@ -41,7 +41,7 @@ public class RoleAssignmentEntity {
     @Column(nullable=false)
     private Long isActive;
 
-    @Column(nullable=true,updatable = false)
+    @Column(nullable=true)
 	private LocalDateTime assignedAt;
     
     @Column(nullable=true)

@@ -1,20 +1,19 @@
 package com.project.mog.service.role;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-
-
 import com.project.mog.repository.role.RoleAssignmentEntity;
-import com.project.mog.repository.role.RoleAssignmentRepository;
 import com.project.mog.repository.role.RolesEntity;
+import com.project.mog.repository.role.RoleAssignmentRepository;
 import com.project.mog.repository.role.RolesRepository;
 import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.repository.users.UsersRepository;
+import com.project.mog.service.users.UsersDto;
 
 import jakarta.transaction.Transactional;
 
@@ -25,7 +24,7 @@ public class RolesService {
     private final RolesRepository rolesRepository;
     private final RoleAssignmentRepository roleAssignmentRepository;
     
-    public RolesService(UsersRepository usersRepository,  RolesRepository rolesRepository,RoleAssignmentRepository roleAssignmentRepository) {
+    public RolesService(UsersRepository usersRepository,  RolesRepository rolesRepository, RoleAssignmentRepository roleAssignmentRepository) {
         this.usersRepository = usersRepository;
         this.rolesRepository = rolesRepository;
         this.roleAssignmentRepository = roleAssignmentRepository;
@@ -34,11 +33,7 @@ public class RolesService {
     public List<RoleAssignmentDto> requestRoleAssignment(RoleRequestDto roleRequestDto, String authEmail) {
         UsersEntity usersEntity = usersRepository.findByEmailWithRole(authEmail).orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다"));
         
-        // roleAssignments가 null이면 초기화
-        if (usersEntity.getRoleAssignments() == null) {
-            usersEntity.setRoleAssignments(new ArrayList<>());
-        }
-        
+         
         if (usersEntity.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN")) {
             throw new IllegalArgumentException("최고 관리자는 역할을 변경할 수 없습니다");
         }
@@ -60,18 +55,27 @@ public class RolesService {
         }
         return usersEntity.getRoleAssignments().stream().map(RoleAssignmentDto::toDto).collect(Collectors.toList());
     }
+    @Transactional
     public List<RoleAssignmentDto> deleteRoleAssignment(RoleDeleteDto roleDeleteDto, Long usersId, String authEmail) {
-        UsersEntity usersEntity = usersRepository.findByEmailWithRole(authEmail).orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다"));
-        if(usersEntity.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN")) {
-            UsersEntity targetUsersEntity = usersRepository.findById(usersId).orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다"));
-            List<RoleAssignmentEntity> roleAssignmentEntity = targetUsersEntity.getRoleAssignments().stream().filter(roleAssignment->roleAssignment.getRole().getRoleName().equals(roleDeleteDto.getRoleName())).collect(Collectors.toList());
-            roleAssignmentEntity.forEach(roleAssignment->roleAssignmentRepository.delete(roleAssignment));
-            usersRepository.save(targetUsersEntity);
-            return roleAssignmentEntity.stream().map(RoleAssignmentDto::toDto).collect(Collectors.toList());
-        }
-        else{
+        UsersEntity currentUser = usersRepository.findByEmailWithRole(authEmail).orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다"));
+        if (!currentUser.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN")) {
             throw new IllegalArgumentException("최고 관리자 외에는 권한을 삭제할 수 없습니다");
         }
+
+        // 삭제 대상 엔티티를 먼저 식별해 반환용 DTO 생성
+        UsersEntity targetUser = usersRepository.findByIdWithRole(usersId)
+            .orElseThrow(() -> new IllegalArgumentException("삭제 대상 사용자를 찾을 수 없습니다"));
+        RoleAssignmentEntity toDelete = targetUser.getRoleAssignments().stream()
+            .filter(r -> r.getAssignmentId().equals(roleDeleteDto.getAssignmentId()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("해당 권한을 찾을 수 없습니다"));
+        RoleAssignmentDto deletedDto = RoleAssignmentDto.toDto(toDelete);
+
+        // 사용자/권한 식별자로 직접 삭제 (네이티브 쿼리)
+        roleAssignmentRepository.deleteByUserIdAndAssignmentId(usersId, roleDeleteDto.getAssignmentId());
+
+        // 삭제된 항목만 반환
+        return java.util.List.of(deletedDto);
     }
     public RoleAssignmentDto permitRoleAssignment(RolePermitDto rolePermitDto, Long usersId, String authEmail) {
         UsersEntity usersEntity = usersRepository.findByEmailWithRole(authEmail).orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다"));
@@ -79,11 +83,39 @@ public class RolesService {
             UsersEntity targetUsersEntity = usersRepository.findById(usersId).orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다"));
             RoleAssignmentEntity roleAssignmentEntity = targetUsersEntity.getRoleAssignments().stream().filter(r -> r.getAssignmentId()==rolePermitDto.getAssignmentId()).findFirst().orElseThrow(() -> new IllegalArgumentException("해당 권한을 찾을 수 없습니다"));
             roleAssignmentEntity.setIsActive(1L);
+            roleAssignmentEntity.setExpiredAt(LocalDateTime.now().plusDays(30));
+            roleAssignmentEntity.setAssignedAt(LocalDateTime.now());
             usersRepository.save(targetUsersEntity);
             return RoleAssignmentDto.toDto(roleAssignmentEntity);
         }
         else{
             throw new IllegalArgumentException("최고 관리자 외에는 권한을 허가할 수 없습니다");
+        }
+    }
+    public List<UsersDto> getRoleAssignment(String authEmail) {
+        UsersEntity usersEntity = usersRepository.findByEmailWithRole(authEmail).orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다"));
+        if(usersEntity.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN")) {
+            List<UsersDto> users = usersRepository.findAll().stream().map(UsersDto::toDto).collect(Collectors.toList());
+            return users;
+        }
+        else{
+            throw new IllegalArgumentException("최고 관리자 외에는 권한을 조회할 수 없습니다");
+        }
+    }
+    public List<RoleResponseDto> getRoleRequests(String authEmail) {
+        UsersEntity usersEntity = usersRepository.findByEmailWithRole(authEmail).orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다"));
+        if(usersEntity.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN")) {
+            List<RoleResponseDto> roleResponseDtos = usersRepository.findAll().stream().filter(user->user.getRoleAssignments().stream().map(roleAssignment -> roleAssignment.getIsActive()).collect(Collectors.toList()).contains(0L)).map(user -> RoleResponseDto.builder()
+                    .usersId(user.getUsersId())
+                    .usersName(user.getUsersName())
+                    .nickName(user.getNickName())
+                    .email(user.getEmail())
+                    .phoneNum(user.getPhoneNum())
+                    .roleAssignments(user.getRoleAssignments().stream().filter(roleAssignment->roleAssignment.getIsActive()==0L).map(RoleAssignmentDto::toDto).collect(Collectors.toList())).build()).collect(Collectors.toList());
+            return roleResponseDtos;
+        }
+        else{
+            throw new IllegalArgumentException("최고 관리자 외에는 권한을 조회할 수 없습니다");
         }
     }
     

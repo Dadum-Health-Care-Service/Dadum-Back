@@ -23,4 +23,8 @@ public interface UsersRepository extends JpaRepository<UsersEntity, Long>{
 	@Query("SELECT DISTINCT u FROM UsersEntity u LEFT JOIN FETCH u.roleAssignments ra LEFT JOIN FETCH ra.role WHERE u.email = ?1")
 	Optional<UsersEntity> findByEmailWithRole(String email);
 	
+	// 사용자 ID로 사용자 정보와 역할 정보를 함께 조회
+	@Query("SELECT DISTINCT u FROM UsersEntity u LEFT JOIN FETCH u.roleAssignments ra LEFT JOIN FETCH ra.role WHERE u.usersId = ?1")
+	Optional<UsersEntity> findByIdWithRole(Long usersId);
+	
 }

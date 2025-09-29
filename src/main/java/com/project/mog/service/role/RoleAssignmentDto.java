@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import com.project.mog.repository.role.RoleAssignmentEntity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,9 +19,13 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class RoleAssignmentDto {
+    @Schema(hidden = true)
     private Long assignmentId;
+    @Schema(hidden = true)
     private Long isActive;
+    @Schema(hidden = true)
     private LocalDateTime assignedAt;
+    @Schema(hidden = true)
     private LocalDateTime expiredAt;
     private RolesDto rolesDto;
 

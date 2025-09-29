@@ -79,7 +79,5 @@ public class UsersEntity {
 	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 	private AuthEntity auth;
 	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-	@Builder.Default
-	private List<RoleAssignmentEntity> roleAssignments = new ArrayList<>();
-
+	private final List<RoleAssignmentEntity> roleAssignments = new ArrayList<>();
 }
