@@ -2,6 +2,7 @@ package com.project.mog.controller.users;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,8 @@ import com.project.mog.service.mail.MailDto;
 import com.project.mog.service.mail.MailService;
 import com.project.mog.service.mail.SendPasswordRequest;
 import com.project.mog.service.role.RoleAssignmentDto;
+import com.project.mog.service.role.RoleDeleteDto;
+import com.project.mog.service.role.RolePermitDto;
 import com.project.mog.service.role.RoleRequestDto;
 import com.project.mog.service.role.RolesDto;
 import com.project.mog.service.role.RolesService;
@@ -106,7 +109,7 @@ public class UsersController implements UsersControllerDocs{
 		
 		long usersId = usersDto.getUsersId();
 		String email = usersDto.getEmail();
-		String role = usersDto.getRoleAssignmentDto().getRolesDto().getRoleName();
+		List<String> roles = usersDto.getRoleAssignmentDto().stream().map(RoleAssignmentDto::getRolesDto).map(RolesDto::getRoleName).collect(Collectors.toList());
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		
@@ -114,7 +117,7 @@ public class UsersController implements UsersControllerDocs{
 		LoginResponse loginResponse = LoginResponse.builder()
 											.usersId(usersId)
 											.email(email)
-											.role(role)
+											.roles(roles)
 											.accessToken(accessToken)
 											.refreshToken(refreshToken)
 											.build();
@@ -127,14 +130,14 @@ public class UsersController implements UsersControllerDocs{
 		UsersDto usersDto = usersService.socialLogin(request);
 		long usersId = usersDto.getUsersId();
 		String email = usersDto.getEmail();
-		String role = usersDto.getRoleAssignmentDto().getRolesDto().getRoleName();
+		List<String> roles = usersDto.getRoleAssignmentDto().stream().map(RoleAssignmentDto::getRolesDto).map(RolesDto::getRoleName).collect(Collectors.toList());
 		String accessToken = jwtUtil.generateAccessToken(email);
 		String refreshToken = jwtUtil.generateRefreshToken(email);
 		
 		LoginResponse loginResponse = LoginResponse.builder()
 										.usersId(usersId)
 										.email(email)
-										.role(role)
+										.roles(roles)
 										.accessToken(accessToken)
 										.refreshToken(refreshToken)
 										.build();
@@ -263,10 +266,28 @@ public class UsersController implements UsersControllerDocs{
 
   @Transactional
   @PostMapping("role/request")
-	public ResponseEntity<RolesDto> requestRoleAssignment(@RequestHeader("Authorization") String authHeader, @RequestBody RoleRequestDto roleRequestDto) {
+	public ResponseEntity<List<RoleAssignmentDto>> requestRoleAssignment(@RequestHeader("Authorization") String authHeader, @RequestBody RoleRequestDto roleRequestDto) {
 		String token = authHeader.replace("Bearer ", "");
 		String authEmail = jwtUtil.extractUserEmail(token);
-		RoleAssignmentDto roleAssignmentDto = rolesService.requestRoleAssignment(roleRequestDto,authEmail);
-		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto.getRolesDto());
+		List<RoleAssignmentDto> roleAssignmentDto = rolesService.requestRoleAssignment(roleRequestDto,authEmail);
+		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
+	}
+
+	@Transactional
+	@DeleteMapping("role/delete/{usersId}")
+	public ResponseEntity<List<RoleAssignmentDto>> deleteRoleAssignment(@RequestHeader("Authorization") String authHeader, @PathVariable Long usersId, @RequestBody RoleDeleteDto roleDeleteDto) {
+		String token = authHeader.replace("Bearer ", "");
+		String authEmail = jwtUtil.extractUserEmail(token);
+		List<RoleAssignmentDto> roleAssignmentDto = rolesService.deleteRoleAssignment(roleDeleteDto,usersId,authEmail);
+		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
+	}
+
+	@Transactional
+	@PutMapping("role/update/{usersId}")
+	public ResponseEntity<RoleAssignmentDto> permitRoleAssignment(@RequestHeader("Authorization") String authHeader, @PathVariable Long usersId, @RequestBody RolePermitDto rolePermitDto) {
+		String token = authHeader.replace("Bearer ", "");
+		String authEmail = jwtUtil.extractUserEmail(token);
+		RoleAssignmentDto roleAssignmentDto = rolesService.permitRoleAssignment(rolePermitDto,usersId,authEmail);
+		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
 	}
 }
