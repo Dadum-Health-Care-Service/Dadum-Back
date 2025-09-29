@@ -35,6 +35,7 @@ public class AdminInitializer implements CommandLineRunner {
         
             // admin 계정이 이미 존재하는지 확인
             var existingAdmin = usersRepository.findByEmailWithRole("admin@dadum.com");
+
             
             if (existingAdmin.isEmpty()) {
                 // admin 계정 생성 (SUPER_ADMIN 역할)
