@@ -114,7 +114,7 @@ public class UsersService {
 					.user(uEntity)
 					.build();
 
-			uEntity.setRoleAssignments(List.of(roleAssignment));
+			uEntity.getRoleAssignments().add(roleAssignment);
 			usersRepository.save(uEntity); // cascade로 RoleAssignment도 함께 저장
 
 			return UsersDto.toDto(uEntity);
