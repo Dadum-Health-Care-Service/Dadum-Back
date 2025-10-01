@@ -15,7 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/shop/products")
+@RequestMapping("/api/v1/shop/products")
 @RequiredArgsConstructor
 @Tag(name = "상품 관리", description = "상품 관련 API")
 public class ProductController {
