@@ -1,5 +1,6 @@
 package com.project.mog.repository.users;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,6 +11,9 @@ public interface UsersRepository extends JpaRepository<UsersEntity, Long>{
 
 	@Query(nativeQuery = true,value = "SELECT USERS.* FROM USERS JOIN AUTH ON (USERS.USERSID=AUTH.USERSID) WHERE USERS.EMAIL=?1 AND AUTH.PASSWORD=?2")
 	Optional<UsersEntity> findByEmailAndPassword(String email, String password);
+	
+	@Query(nativeQuery = true,value = "SELECT USERS.* FROM USERS JOIN AUTH ON (USERS.USERSID=AUTH.USERSID) WHERE USERS.EMAIL=?1")
+	Optional<UsersEntity> findByEmailWithAuth(String email);
 
 	
 	// 사용자 기본 정보만 조회 (가벼운 조회용)
@@ -26,5 +30,8 @@ public interface UsersRepository extends JpaRepository<UsersEntity, Long>{
 	// 사용자 ID로 사용자 정보와 역할 정보를 함께 조회
 	@Query("SELECT DISTINCT u FROM UsersEntity u LEFT JOIN FETCH u.roleAssignments ra LEFT JOIN FETCH ra.role WHERE u.usersId = ?1")
 	Optional<UsersEntity> findByIdWithRole(Long usersId);
+
+	@Query("SELECT DISTINCT u FROM UsersEntity u LEFT JOIN FETCH u.roleAssignments ra LEFT JOIN FETCH ra.role WHERE ra.role.roleName = ?1")
+    List<UsersEntity> findByRoleAssignmentsRoleRoleName(String string);
 	
 }

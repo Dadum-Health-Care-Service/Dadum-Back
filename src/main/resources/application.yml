@@ -64,7 +64,12 @@ openai:
     key: "${OPENAI_API_KEY:}"
     timeout: 30
 
+firebase:
+  project-id: dadum-a2604
+  credentials-path: classpath:firebase-adminsdk.json
+
 logging:
   level:
     com.project.mog.controller.chatbot: DEBUG
+
 
