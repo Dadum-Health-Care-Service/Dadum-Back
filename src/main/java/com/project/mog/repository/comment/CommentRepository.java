@@ -14,6 +14,6 @@ public interface CommentRepository extends JpaRepository<CommentEntity, Long> {
 	@Query(nativeQuery = true,value ="SELECT * FROM COMMENTS WHERE USERSID=?1 ORDER BY COMMENTUPDATE DESC")
 	List<CommentEntity> findByUserId(long usersId);
 
-	@Query(nativeQuery = true, value ="SELECT * FROM COMMENTS WHERE USERSID=?1 AND POSTID=?2")
-	CommentEntity findByUserIdAndPostId(long usersId, Long postId); 
+	@Query(nativeQuery = true, value ="SELECT * FROM COMMENTS WHERE USERSID=?1 AND COMMENTID=?2")
+	CommentEntity findByUserIdAndCommentId(long usersId, Long commentId); 
 }

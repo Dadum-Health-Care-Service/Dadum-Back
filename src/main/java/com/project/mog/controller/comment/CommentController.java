@@ -80,10 +80,10 @@ public class CommentController {
         @ApiResponse(responseCode = "403", description = "권한 없음"),
         @ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음")
     })
-    public ResponseEntity<Void> removeComment(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader, @Parameter(description = "게시글 ID", example = "1") @PathVariable Long postId, @Parameter(description = "댓글 ID", example = "1") @PathVariable Long commentId) {
+    public ResponseEntity<String> removeComment(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader, @Parameter(description = "게시글 ID", example = "1") @PathVariable Long postId, @Parameter(description = "댓글 ID", example = "1") @PathVariable Long commentId) {
     	String token = authHeader.replace("Bearer ", "");
 		String authEmail = jwtUtil.extractUserEmail(token); 
         commentService.deleteComment(commentId, authEmail);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok("댓글이 삭제되었습니다");
     }
 }

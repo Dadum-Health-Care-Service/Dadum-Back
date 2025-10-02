@@ -60,7 +60,8 @@ public class CommentService {
         CommentEntity comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new EntityNotFoundException("댓글을 찾을 수 없습니다. ID: " + commentId));
 
-        if (comment.getUser().getEmail() != email) {
+        if (!comment.getUser().getEmail().equals(email) ) {
+        	System.out.println("유저 이메일:"+comment.getUser().getEmail()+",authEmail:"+email);
             throw new SecurityException("댓글을 삭제할 권한이 없습니다.");
         }
         commentRepository.delete(comment);
@@ -70,7 +71,7 @@ public class CommentService {
 		PostEntity post = postRepository.findById(postId).orElseThrow(() -> new EntityNotFoundException("해당 게시물을 찾을 수 없습니다. ID: " + postId));
 		UsersEntity user = usersRepository.findByEmail(authEmail)
 	            .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다. ID: " + authEmail));
-		CommentEntity comment = commentRepository.findByUserIdAndPostId(user.getUsersId(),post.getPostId());
+		CommentEntity comment = commentRepository.findByUserIdAndCommentId(user.getUsersId(),commentId);
 		comment.setContent(requestDto.getContent());
 		CommentEntity savedComment = commentRepository.save(comment);
 		return new CommentResponseDto(savedComment);
