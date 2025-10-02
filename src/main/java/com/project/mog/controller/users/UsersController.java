@@ -25,6 +25,7 @@ import com.project.mog.controller.auth.PasswordlessRegisterRequest;
 import com.project.mog.controller.login.LoginRequest;
 import com.project.mog.controller.login.LoginResponse;
 import com.project.mog.controller.login.SocialLoginRequest;
+import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.security.jwt.JwtUtil;
 import com.project.mog.service.auth.WebPushTokenRequestDto;
 import com.project.mog.service.firebase.FirebaseService;

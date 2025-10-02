@@ -27,7 +27,7 @@ public class PostEntity {
 	@GeneratedValue(strategy = GenerationType.SEQUENCE,generator ="SEQ_POST_GENERATOR" )
     private Long postId;         // 글 고유번호 (PK)
 
-    @Column(length = 100, nullable = false)
+    @Column(length = 100, nullable = true)
     private String postTitle;    // 글 제목
 
     @Column(length = 2000, nullable = false)
