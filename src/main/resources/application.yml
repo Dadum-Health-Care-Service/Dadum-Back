@@ -64,3 +64,7 @@ openai:
     key: "${OPENAI_API_KEY:}"
     timeout: 30
 
+logging:
+  level:
+    com.project.mog.controller.chatbot: DEBUG
+

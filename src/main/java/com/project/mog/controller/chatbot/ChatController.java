@@ -33,8 +33,8 @@ public class ChatController {
     private static final String CONNECTION = "keep-alive";
     
     // 에러 메시지를 상수로 분리
-    private static final String API_KEY_ERROR_MESSAGE = "data: {\"error\": \"OpenAI API 키가 설정되지 않았습니다.\"}\n\n";
-    private static final String STREAM_ERROR_MESSAGE = "data: {\"error\": \"챗봇 응답 생성 중 오류가 발생했습니다.\"}\n\n";
+    private static final String API_KEY_ERROR_MESSAGE = "{\"error\": \"OpenAI API 키가 설정되지 않았습니다.\"}";
+    private static final String STREAM_ERROR_MESSAGE = "{\"error\": \"챗봇 응답 생성 중 오류가 발생했습니다.\"}";
     
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "챗봇 스트리밍 대화", description = "OpenAI API를 사용한 실시간 스트리밍 대화를 제공합니다.")
@@ -94,7 +94,10 @@ public class ChatController {
      * SSE 형식으로 데이터 포맷팅
      */
     private String formatSSE(String data) {
-        if (data == null || data.trim().isEmpty()) {
+        log.debug("formatSSE 입력 데이터: '{}'", data);
+        
+        // data가 null이거나, 정말로 비어있을 때만 처리하도록 변경
+        if (data == null || data.isEmpty()) {
             return "data: \n\n";
         }
         
@@ -103,7 +106,13 @@ public class ChatController {
             return "data: [DONE]\n\n";
         }
         
-        // 모든 텍스트에 data: 접두사 추가 (SSE 표준 형식)
-        return "data: " + data + "\n\n";
+        // 이미 data: 접두사가 있으면 그대로 반환, 없으면 추가
+        if (data.startsWith("data: ")) {
+            log.debug("data: 접두사가 이미 있음, 그대로 반환");
+            return data + "\n\n";
+        } else {
+            log.debug("data: 접두사 추가");
+            return "data: " + data + "\n\n";
+        }
     }
 }
