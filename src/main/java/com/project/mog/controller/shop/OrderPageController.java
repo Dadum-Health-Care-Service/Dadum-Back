@@ -13,7 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/shop/order")
+@RequestMapping("/api/v1/shop/order")
 @RequiredArgsConstructor
 @Tag(name = "주문 페이지", description = "주문 페이지 관련 API")
 public class OrderPageController {

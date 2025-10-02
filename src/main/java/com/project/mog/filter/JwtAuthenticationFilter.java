@@ -38,11 +38,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		if(header!=null && header.startsWith("Bearer ")) {
 			String token = header.substring(7);
 			System.out.println("토큰: " + token);
-			String email = jwtUtil.extractUserEmail(token);
 			
-			if(email!=null&&SecurityContextHolder.getContext().getAuthentication()==null) {
-				try {
-					UserDetails usersDetails = usersDetailService.loadUserByUsername(email);
+			try {
+				String email = jwtUtil.extractUserEmail(token);
+				System.out.println("추출된 이메일: " + email);
+				
+				if(email!=null&&SecurityContextHolder.getContext().getAuthentication()==null) {
+					try {
+						UserDetails usersDetails = usersDetailService.loadUserByUsername(email);
 				
 				
 					if(jwtUtil.isTokenValid(token,usersDetails)) {
@@ -53,11 +56,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 						
 						SecurityContextHolder.getContext().setAuthentication(authentication);
 					}
+					}
+					catch(UsernameNotFoundException ex) {
+						System.out.println("사용자를 찾을 수 없음: " + email);
+						response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+				        response.setContentType("text/plain;charset=UTF-8");
+					}
 				}
-				catch(UsernameNotFoundException ex) {
-					response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-			        response.setContentType("text/plain;charset=UTF-8");
-				}
+			} catch (Exception e) {
+				System.out.println("JWT 토큰 파싱 오류: " + e.getMessage());
+				response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+		        response.setContentType("text/plain;charset=UTF-8");
 			}
 			
 		}

@@ -35,13 +35,13 @@ public class RolesService {
         
          
         if (usersEntity.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN")) {
-            throw new IllegalArgumentException("최고 관리자는 역할을 변경할 수 없습니다");
+            throw new IllegalArgumentException("최고 관리자는 권한을 변경할 수 없습니다");
         }
         if (usersEntity.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains(roleRequestDto.getRoleName())) {
-            throw new IllegalArgumentException("이미 해당 역할을 가지고 있습니다");
+            throw new IllegalArgumentException("이미 해당 권한을 가지고 있습니다");
         }
         if (!usersEntity.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains(roleRequestDto.getRoleName())) {
-            RolesEntity rolesEntity = rolesRepository.findByRoleName(roleRequestDto.getRoleName()).orElseThrow(() -> new IllegalArgumentException("해당 역할을 찾을 수 없습니다"));
+            RolesEntity rolesEntity = rolesRepository.findByRoleName(roleRequestDto.getRoleName()).orElseThrow(() -> new IllegalArgumentException("해당 권한을 찾을 수 없습니다"));
             RoleAssignmentEntity roleAssignmentEntity = RoleAssignmentEntity.builder()
                     .role(rolesEntity)
                     .user(usersEntity)
@@ -117,6 +117,22 @@ public class RolesService {
         else{
             throw new IllegalArgumentException("최고 관리자 외에는 권한을 조회할 수 없습니다");
         }
+    }
+    
+    // 사용 가능한 모든 역할 목록 조회
+    public List<RolesDto> getAllRoles() {
+        return rolesRepository.findAll().stream()
+                .map(RolesDto::toDto)
+                .collect(Collectors.toList());
+    }
+    
+    // 사용자의 승인된 권한 목록 조회
+    public List<RoleAssignmentDto> getUserRoles(String authEmail) {
+        UsersEntity usersEntity = usersRepository.findByEmailWithRole(authEmail)
+                .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다"));
+        return usersEntity.getRoleAssignments().stream()
+                .map(RoleAssignmentDto::toDto)
+                .collect(Collectors.toList());
     }
     
 }

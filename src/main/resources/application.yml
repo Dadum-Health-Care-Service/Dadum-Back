@@ -57,7 +57,7 @@ spring:
       mail.smtp.ssl.protocols: TLSv1.2
       
 jwttoken:
-  secret-key: Nf/vIRqt0/bKThqJ6tOy2M9tqJX+rJxGG9HrZgsBrT4=
+  secret-key: Nf/vIRqt0/bKThqJ6tOy2M9tqJX+rJxGG9HrZgsBrT4=                                                                                                                                            
 
 openai:
   api:
@@ -67,4 +67,9 @@ openai:
 firebase:
   project-id: dadum-a2604
   credentials-path: classpath:firebase-adminsdk.json
+
+logging:
+  level:
+    com.project.mog.controller.chatbot: DEBUG
+
 

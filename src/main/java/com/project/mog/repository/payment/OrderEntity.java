@@ -64,6 +64,9 @@ public class OrderEntity {
     @Column(name = "ORDER_STATUS", nullable = false)
     private String orderStatus; // PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
     
+    @Column(name = "SELLER_ID")
+    private Long sellerId;
+    
     @Column(name = "SHIPPING_ADDRESS")
     private String shippingAddress;
     
