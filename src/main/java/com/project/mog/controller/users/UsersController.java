@@ -25,7 +25,6 @@ import com.project.mog.controller.auth.PasswordlessRegisterRequest;
 import com.project.mog.controller.login.LoginRequest;
 import com.project.mog.controller.login.LoginResponse;
 import com.project.mog.controller.login.SocialLoginRequest;
-import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.security.jwt.JwtUtil;
 import com.project.mog.service.mail.MailDto;
 import com.project.mog.service.mail.MailService;
@@ -398,6 +397,22 @@ public class UsersController {
 		String authEmail = jwtUtil.extractUserEmail(token);
 		List<RoleResponseDto> roleAssignmentDto = rolesService.getRoleRequests(authEmail);
 		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
+	}
+
+	@Operation(summary = "사용 가능한 역할 목록 조회", description = "시스템에 등록된 모든 역할 목록을 조회합니다.")
+	@GetMapping("roles/available")
+	public ResponseEntity<List<RolesDto>> getAvailableRoles() {
+		List<RolesDto> roles = rolesService.getAllRoles();
+		return ResponseEntity.status(HttpStatus.OK).body(roles);
+	}
+
+	@Operation(summary = "사용자 승인된 권한 목록 조회", description = "현재 로그인한 사용자의 권한을 조회합니다.")
+	@GetMapping("roles/current")
+	public ResponseEntity<List<RoleAssignmentDto>> getCurrentUserRoles(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader) {
+		String token = authHeader.replace("Bearer ", "");
+		String authEmail = jwtUtil.extractUserEmail(token);
+		List<RoleAssignmentDto> userRoles = rolesService.getUserRoles(authEmail);
+		return ResponseEntity.status(HttpStatus.OK).body(userRoles);
 	}
 
 }
