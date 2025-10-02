@@ -66,5 +66,16 @@ public class CommentService {
         commentRepository.delete(comment);
     }
 
+	public CommentResponseDto updateComment(String authEmail, Long postId, Long commentId, CommentSaveRequestDto requestDto) {
+		PostEntity post = postRepository.findById(postId).orElseThrow(() -> new EntityNotFoundException("해당 게시물을 찾을 수 없습니다. ID: " + postId));
+		UsersEntity user = usersRepository.findByEmail(authEmail)
+	            .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다. ID: " + authEmail));
+		CommentEntity comment = commentRepository.findByUserIdAndPostId(user.getUsersId(),post.getPostId());
+		comment.setContent(requestDto.getContent());
+		CommentEntity savedComment = commentRepository.save(comment);
+		return new CommentResponseDto(savedComment);
+	}
+    
+    
 	
 }
