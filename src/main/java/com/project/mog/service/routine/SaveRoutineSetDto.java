@@ -22,11 +22,13 @@ public class SaveRoutineSetDto {
 	private long srsId;
 	private long weight;
 	private long many;
+	private long rest;
 	
 	public SaveRoutineSetEntity toEntity(SaveRoutineEntity srEntity) {
 		return SaveRoutineSetEntity.builder()
 				.weight(weight)
 				.many(many)
+				.rest(rest)
 				.saveRoutine(srEntity)
 				.build();
 	}
@@ -37,6 +39,7 @@ public class SaveRoutineSetDto {
 				.srsId(saveRoutineSetEntity.getSrsId())
 				.weight(saveRoutineSetEntity.getWeight())
 				.many(saveRoutineSetEntity.getMany())
+				.rest(saveRoutineSetEntity.getRest())
 				.build();
 	}
 

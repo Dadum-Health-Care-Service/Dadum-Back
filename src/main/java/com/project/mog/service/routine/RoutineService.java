@@ -64,7 +64,7 @@ public class RoutineService {
 		rEntity.setSaveRoutine(routineDto.getSaveRoutineDto().stream().map(srDto->{
 			SaveRoutineEntity srEntity = srDto.toEntity(rEntity);
 			srEntity.setSaveRoutineSet(srDto.getSet().stream().map(srs->{
-				return SaveRoutineSetEntity.builder().weight(srs.getWeight()).many(srs.getMany()).saveRoutine(srEntity).build();
+				return SaveRoutineSetEntity.builder().weight(srs.getWeight()).many(srs.getMany()).rest(srs.getRest()).saveRoutine(srEntity).build();
 			}).toList());
 			return srEntity;
 			}).collect(Collectors.toList()));
@@ -103,85 +103,100 @@ public class RoutineService {
 	}
 	
 	public RoutineDto updateRoutine(String authEmail,Long setId, RoutineDto routineDto) {
-		UsersEntity uEntity = usersRepository.findByEmail(authEmail)
-			    .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다"));
+	    UsersEntity uEntity = usersRepository.findByEmail(authEmail)
+	        .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다"));
 
-			RoutineEntity routineEntity = routineRepository.findById(routineDto.getSetId())
-			    .orElseThrow(() -> new IllegalArgumentException("루틴이 존재하지 않습니다"));
+	    RoutineEntity routineEntity = routineRepository.findById(routineDto.getSetId())
+	        .orElseThrow(() -> new IllegalArgumentException("루틴이 존재하지 않습니다"));
 
-			// 루틴 이름 업데이트
-			routineEntity.setRoutineName(routineDto.getRoutineName());
-			List<SaveRoutineDto> saveRoutineDtos = routineDto.getSaveRoutineDto();
-			//수정할 SaveRoutine 매핑
-			List<SaveRoutineEntity> saveRoutineEntities = routineEntity.getSaveRoutine();
-			Map<Long, SaveRoutineEntity> saveRoutineEntityMap = saveRoutineEntities.stream()
-				    .collect(Collectors.toMap(SaveRoutineEntity::getSrId, Function.identity()));
-			for (SaveRoutineDto srDto:saveRoutineDtos) {
-				//매치된 SaveRoutine
-				SaveRoutineEntity matchedSaveRoutineEntity = routineEntity.getSaveRoutine().stream().filter(entity->entity.getSrId()==srDto.getSrId()).findFirst().orElse(null);
-				//매치된 SaveRoutine 존재시
-				if(matchedSaveRoutineEntity!=null) {
-					matchedSaveRoutineEntity.setSrName(srDto.getSrName());
-					matchedSaveRoutineEntity.setExId(srDto.getExId());
-					matchedSaveRoutineEntity.setReps(srDto.getReps());
-					List<SaveRoutineSetEntity> saveRoutineSetEntities = matchedSaveRoutineEntity.getSaveRoutineSet();
-					//수정할 SaveRoutineSet 매핑
-					Map<Long, SaveRoutineSetEntity> saveRoutineSetEntityMap = saveRoutineSetEntities.stream()
-						    .collect(Collectors.toMap(SaveRoutineSetEntity::getSrsId, Function.identity()));
-					List<SaveRoutineSetDto> saveRoutineSetDtos =  srDto.getSet();
-					//매치된 SaveRoutineSet 재설정
-					for(SaveRoutineSetDto srsDto:saveRoutineSetDtos) {
-						//매치된 SaveRoutineSet
-						SaveRoutineSetEntity matchedSaveRoutineSetEntity = matchedSaveRoutineEntity.getSaveRoutineSet().stream().filter(entity->entity.getSrsId()==srsDto.getSrsId()).findFirst().orElse(null);
-						//매치된 SaveRoutineSet 존재시
-						if(matchedSaveRoutineSetEntity!=null) {
-							matchedSaveRoutineSetEntity.setMany(srsDto.getMany());
-							matchedSaveRoutineSetEntity.setWeight(srsDto.getWeight());
-							matchedSaveRoutineSetEntity.setSaveRoutine(matchedSaveRoutineEntity);
-							//수정된 후 맵에서 삭제
-							saveRoutineSetEntityMap.remove(srsDto.getSrsId());
-						}
-						//매치된 SaveRoutineSet 미존재시 추가
-						else {
-							SaveRoutineSetEntity srsEntity = srsDto.toEntity(matchedSaveRoutineEntity);
-							srsEntity.setSaveRoutine(matchedSaveRoutineEntity);
-							saveRoutineSetRepository.save(srsEntity);
-						}
-					}
-					//SaveRoutineSetEntity 기준 재순회
-					for(SaveRoutineSetEntity saveRoutineSetEntity:saveRoutineSetEntityMap.values() ) {
-						//수정 이후맵에 남아있는 경우 삭제
-						matchedSaveRoutineEntity.getSaveRoutineSet().remove(saveRoutineSetEntity);
-						saveRoutineSetRepository.delete(saveRoutineSetEntity);
-					}
-					//SaveRoutineSet CRUD 후 루틴 부모 설정
-					matchedSaveRoutineEntity.setRoutine(routineEntity);
-					//수정된 후 맵에서 삭제
-					saveRoutineEntityMap.remove(srDto.getSrId());
-				}
-				//매치된 SaveRoutine 미존재시 추가
-				else {
-					srDto.getSet().forEach(srs->System.out.println("SRS"+"id:"+srs.getSrsId()+"many:"+srs.getMany()));
-					SaveRoutineEntity srEntity = srDto.toEntity(routineEntity);
-					List<SaveRoutineSetEntity> srsEntities = srDto.getSet().stream().map(srs -> srs.toEntity(srEntity)).toList();
-					srsEntities.forEach(srs->saveRoutineSetRepository.save(srs));
-					srEntity.setSaveRoutineSet(srsEntities);
-					saveRoutineSetRepository.saveAll(srsEntities);
-					saveRoutineRepository.save(srEntity);
-				}
-				//SaveRoutineEntity 기준 재순회
-				for(SaveRoutineEntity saveRoutineEntity:saveRoutineEntityMap.values() ) {
-					//수정 이후맵에 남아있는 경우 삭제
-					routineEntity.getSaveRoutine().remove(saveRoutineEntity);
-					saveRoutineRepository.delete(saveRoutineEntity);
-				}
-			}
-			entityManager.flush();
-			entityManager.clear();
-			RoutineEntity afterRoutineEntity = routineRepository.findById(routineDto.getSetId())
-				    .orElseThrow(() -> new IllegalArgumentException("루틴이 존재하지 않습니다"));
-			return RoutineDto.toDto(afterRoutineEntity);
-
+	    // 루틴 이름 업데이트
+	    routineEntity.setRoutineName(routineDto.getRoutineName());
+	    List<SaveRoutineDto> saveRoutineDtos = routineDto.getSaveRoutineDto();
+	    
+	    //수정할 SaveRoutine 매핑
+	    List<SaveRoutineEntity> saveRoutineEntities = routineEntity.getSaveRoutine();
+	    Map<Long, SaveRoutineEntity> saveRoutineEntityMap = saveRoutineEntities.stream()
+	        .collect(Collectors.toMap(SaveRoutineEntity::getSrId, Function.identity()));
+	        
+	    for (SaveRoutineDto srDto:saveRoutineDtos) {
+	        //매치된 SaveRoutine
+	        SaveRoutineEntity matchedSaveRoutineEntity = routineEntity.getSaveRoutine().stream()
+	            .filter(entity->entity.getSrId()==srDto.getSrId())
+	            .findFirst().orElse(null);
+	            
+	        //매치된 SaveRoutine 존재시
+	        if(matchedSaveRoutineEntity!=null) {
+	            matchedSaveRoutineEntity.setSrName(srDto.getSrName());
+	            matchedSaveRoutineEntity.setExId(srDto.getExId());
+	            matchedSaveRoutineEntity.setReps(srDto.getReps());
+	            
+	            List<SaveRoutineSetEntity> saveRoutineSetEntities = matchedSaveRoutineEntity.getSaveRoutineSet();
+	            //수정할 SaveRoutineSet 매핑
+	            Map<Long, SaveRoutineSetEntity> saveRoutineSetEntityMap = saveRoutineSetEntities.stream()
+	                .collect(Collectors.toMap(SaveRoutineSetEntity::getSrsId, Function.identity()));
+	            List<SaveRoutineSetDto> saveRoutineSetDtos = srDto.getSet();
+	            
+	            //매치된 SaveRoutineSet 재설정
+	            for(SaveRoutineSetDto srsDto:saveRoutineSetDtos) {
+	                //매치된 SaveRoutineSet
+	                SaveRoutineSetEntity matchedSaveRoutineSetEntity = matchedSaveRoutineEntity.getSaveRoutineSet().stream()
+	                    .filter(entity->entity.getSrsId()==srsDto.getSrsId())
+	                    .findFirst().orElse(null);
+	                    
+	                //매치된 SaveRoutineSet 존재시
+	                if(matchedSaveRoutineSetEntity!=null) {
+	                    matchedSaveRoutineSetEntity.setMany(srsDto.getMany());
+	                    matchedSaveRoutineSetEntity.setWeight(srsDto.getWeight());
+	                    matchedSaveRoutineSetEntity.setRest(srsDto.getRest());
+	                    matchedSaveRoutineSetEntity.setSaveRoutine(matchedSaveRoutineEntity);
+	                    //수정된 후 맵에서 삭제
+	                    saveRoutineSetEntityMap.remove(srsDto.getSrsId());
+	                }
+	                //매치된 SaveRoutineSet 미존재시 추가
+	                else {
+	                    SaveRoutineSetEntity srsEntity = srsDto.toEntity(matchedSaveRoutineEntity);
+	                    srsEntity.setSaveRoutine(matchedSaveRoutineEntity);
+	                    saveRoutineSetRepository.save(srsEntity);
+	                }
+	            }
+	            
+	            //SaveRoutineSetEntity 기준 재순회
+	            for(SaveRoutineSetEntity saveRoutineSetEntity:saveRoutineSetEntityMap.values() ) {
+	                //수정 이후맵에 남아있는 경우 삭제
+	                matchedSaveRoutineEntity.getSaveRoutineSet().remove(saveRoutineSetEntity);
+	                saveRoutineSetRepository.delete(saveRoutineSetEntity);
+	            }
+	            
+	            //SaveRoutineSet CRUD 후 루틴 부모 설정
+	            matchedSaveRoutineEntity.setRoutine(routineEntity);
+	            //수정된 후 맵에서 삭제
+	            saveRoutineEntityMap.remove(srDto.getSrId());
+	        }
+	        //매치된 SaveRoutine 미존재시 추가
+	        else {
+	            srDto.getSet().forEach(srs->System.out.println("SRS"+"id:"+srs.getSrsId()+"many:"+srs.getMany()));
+	            SaveRoutineEntity srEntity = srDto.toEntity(routineEntity);
+	            List<SaveRoutineSetEntity> srsEntities = srDto.getSet().stream()
+	                .map(srs -> srs.toEntity(srEntity)).toList();
+	            srsEntities.forEach(srs->saveRoutineSetRepository.save(srs));
+	            srEntity.setSaveRoutineSet(srsEntities);
+	            saveRoutineSetRepository.saveAll(srsEntities);
+	            saveRoutineRepository.save(srEntity);
+	        }
+	    }
+	    
+	    //SaveRoutineEntity 기준 재순회
+	    for(SaveRoutineEntity saveRoutineEntity:saveRoutineEntityMap.values() ) {
+	        //수정 이후맵에 남아있는 경우 삭제
+	        routineEntity.getSaveRoutine().remove(saveRoutineEntity);
+	        saveRoutineRepository.delete(saveRoutineEntity);
+	    }
+	    
+	    entityManager.flush();
+	    entityManager.clear();
+	    RoutineEntity afterRoutineEntity = routineRepository.findById(routineDto.getSetId())
+	        .orElseThrow(() -> new IllegalArgumentException("루틴이 존재하지 않습니다"));
+	    return RoutineDto.toDto(afterRoutineEntity);
 	}
 	
 	public SaveRoutineDto getSaveRoutine(Long setId, Long srId) {

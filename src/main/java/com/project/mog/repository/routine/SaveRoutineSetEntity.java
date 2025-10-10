@@ -36,6 +36,9 @@ public class SaveRoutineSetEntity {
 	@Column(length=19)
 	private long many;
 	
+	@Column(length=19)
+	private long rest;
+	
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "srId", referencedColumnName = "srId", nullable = true)
 	private SaveRoutineEntity saveRoutine;
