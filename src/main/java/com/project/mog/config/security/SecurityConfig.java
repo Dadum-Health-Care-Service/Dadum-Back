@@ -65,6 +65,7 @@ public class SecurityConfig {
 						"/api/v1/health/**",
 						"/api/shop/**",
 						"/api/chat/**",  // 챗봇 API 허용
+						"/api/v1/news/**",  // 뉴스 API 허용
 						"/swagger-ui/*",
 						"/swagger-resources/**",
 						"/v3/api-docs/**",

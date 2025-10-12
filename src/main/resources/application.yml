@@ -64,6 +64,11 @@ openai:
     key: "${OPENAI_API_KEY:}"
     timeout: 30
 
+naver:
+  client:
+    id: urNDov_OB0TwAnHmw4Bc
+    secret: 9RJ1ihZqXP
+
 logging:
   level:
     com.project.mog.controller.chatbot: DEBUG
