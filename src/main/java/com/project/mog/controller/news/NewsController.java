@@ -35,20 +35,21 @@ public class NewsController {
     private String clientSecret;
 
     /**
-     * 운동 관련 뉴스 검색 (네이버 검색 API 사용)
+     * 피트니스 관련 뉴스 검색 (네이버 검색 API 사용)
      */
     @GetMapping("/fitness")
     public ResponseEntity<String> getFitnessNews(
-            @RequestParam(defaultValue = "운동 헬스 피트니스") String query,
-            @RequestParam(defaultValue = "12") int display) {
+            @RequestParam(defaultValue = "피트니스 운동") String query,
+            @RequestParam(defaultValue = "20") int display) {
         
-        log.info("네이버 뉴스 검색 요청 - query: {}, display: {}", query, display);
+        log.info("네이버 피트니스 뉴스 검색 요청 - query: {}, display: {}", query, display);
         
         try {
-            // 오늘 날짜 기준 최신 운동/헬스/피트니스 뉴스 검색
-            // 검색어를 더 구체적으로 설정하여 최신 뉴스가 나오도록 함
-            String searchQuery = "헬스 피트니스";
+            // 스포츠 피트니스 특화 검색어
+            String searchQuery = "스포츠 " + query + " 피트니스 아웃도어 운동";
             String text = URLEncoder.encode(searchQuery, StandardCharsets.UTF_8);
+            
+            // 네이버 뉴스 API 호출 (카테고리 파라미터 제거)
             String apiURL = "https://openapi.naver.com/v1/search/news?query=" + text 
                           + "&display=" + display 
                           + "&sort=date" // 최신순 정렬
