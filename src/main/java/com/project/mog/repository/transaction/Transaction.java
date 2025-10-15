@@ -1,4 +1,4 @@
-package com.project.mog.entity;
+package com.project.mog.repository.transaction;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

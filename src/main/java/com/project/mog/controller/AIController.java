@@ -2,9 +2,10 @@ package com.project.mog.controller;
 
 import com.project.mog.dto.FraudDetectionRequest;
 import com.project.mog.dto.FraudDetectionResponse;
-import com.project.mog.entity.Transaction;
 import com.project.mog.service.AIService;
 import com.project.mog.repository.TransactionRepository;
+import com.project.mog.repository.transaction.Transaction;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

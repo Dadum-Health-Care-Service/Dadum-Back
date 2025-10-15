@@ -1,9 +1,10 @@
 package com.project.mog.service;
 
-import com.project.mog.entity.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+
+import com.project.mog.repository.transaction.Transaction;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
