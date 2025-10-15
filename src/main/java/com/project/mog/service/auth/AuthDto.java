@@ -23,12 +23,15 @@ public class AuthDto {
 	private String password;
 	@Schema(hidden = true)
 	private LocalDateTime connectTime;
+	@Schema(description = "webPushToken",example="webPushToken")
+	private String webPushToken;
 	
 	public AuthEntity toEntity() {
 			return AuthEntity.builder()
 					.authId(authId)
 					.password(password)
 					.connectTime(connectTime)
+					.webPushToken(webPushToken)
 					.build();
 	}
 	
@@ -38,6 +41,7 @@ public class AuthDto {
 				.authId(aEntity.getAuthId())
 				.password(aEntity.getPassword())
 				.connectTime(aEntity.getConnectTime())
+				.webPushToken(aEntity.getWebPushToken())
 				.build();
 	}
 

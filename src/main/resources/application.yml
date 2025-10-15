@@ -64,9 +64,17 @@ openai:
     key: "${OPENAI_API_KEY:}"
     timeout: 30
 
-# AI 서비스 설정
+# AI 이상거래탐지 서비스 설정
 ai:
   service:
     url: http://localhost:9000
     timeout: 30000
+
+firebase:
+  project-id: dadum-a2604
+  credentials-path: classpath:firebase-adminsdk.json
+
+logging:
+  level:
+    com.project.mog.controller.chatbot: DEBUG
 

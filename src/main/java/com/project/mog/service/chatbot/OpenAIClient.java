@@ -37,8 +37,8 @@ public class OpenAIClient {
     private static final double TEMPERATURE = 0.4; // 규칙 준수 향상을 위해 낮춤
     private static final int MAX_TOKENS = 1000;
     private static final String DONE_SIGNAL = "[DONE]";
-    private static final String API_KEY_ERROR_MESSAGE = "data: {\"error\": \"OpenAI API 키가 설정되지 않았습니다.\"}\n\n";
-    private static final String API_CALL_ERROR_MESSAGE = "data: {\"error\": \"OpenAI API 호출 중 오류가 발생했습니다.\"}\n\n";
+    private static final String API_KEY_ERROR_MESSAGE = "{\"error\": \"OpenAI API 키가 설정되지 않았습니다.\"}";
+    private static final String API_CALL_ERROR_MESSAGE = "{\"error\": \"OpenAI API 호출 중 오류가 발생했습니다.\"}";
 
     public boolean isApiKeyValid() {
         return apiKey != null && !apiKey.isEmpty() && !apiKey.equals("your-openai-api-key-here");
@@ -95,7 +95,7 @@ public class OpenAIClient {
                 if (choice.has("delta") && choice.get("delta").has("content")) {
                     String content = choice.get("delta").get("content").asText();
                     
-                    if (!content.isEmpty()) {
+                    if (content != null) {
                         return content;
                     }
                 }

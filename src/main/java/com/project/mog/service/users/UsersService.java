@@ -363,5 +363,18 @@ public class UsersService {
 					.build();
 			}).collect(java.util.stream.Collectors.toList());
 		}
+
+
+        public void saveWebPushToken(String authEmail, String webPushToken) {
+            UsersEntity usersEntity = usersRepository.findByEmail(authEmail).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+            AuthEntity authEntity = usersEntity.getAuth();
+			System.out.println(webPushToken);
+			authEntity.setWebPushToken(webPushToken);
+        }
+
+
+		public List<UsersEntity> getUsersByRole(String string) {
+			return usersRepository.findByRoleAssignmentsRoleRoleName(string);
+		}
 		
 }

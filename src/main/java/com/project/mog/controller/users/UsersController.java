@@ -25,7 +25,10 @@ import com.project.mog.controller.auth.PasswordlessRegisterRequest;
 import com.project.mog.controller.login.LoginRequest;
 import com.project.mog.controller.login.LoginResponse;
 import com.project.mog.controller.login.SocialLoginRequest;
+import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.security.jwt.JwtUtil;
+import com.project.mog.service.auth.WebPushTokenRequestDto;
+import com.project.mog.service.firebase.FirebaseService;
 import com.project.mog.service.mail.MailDto;
 import com.project.mog.service.mail.MailService;
 import com.project.mog.service.mail.SendPasswordRequest;
@@ -61,6 +64,7 @@ public class UsersController {
 	private final UsersService usersService;
 	private final MailService mailService;
 	private final RolesService rolesService;
+	private final FirebaseService firebaseService;
 	
 	
 	@GetMapping("list")
@@ -356,6 +360,10 @@ public class UsersController {
 		String token = authHeader.replace("Bearer ", "");
 		String authEmail = jwtUtil.extractUserEmail(token);
 		List<RoleAssignmentDto> roleAssignmentDto = rolesService.requestRoleAssignment(roleRequestDto,authEmail);
+		List<UsersEntity> usersEntities = usersService.getUsersByRole("SUPER_ADMIN");
+		UsersEntity adminUser = usersEntities.get(0);
+		String adminToken = adminUser.getAuth().getWebPushToken();
+		firebaseService.sendNotification(adminToken, "새로운 권한 요청", authEmail + " 님이 " + "새 권한을 요청했습니다.");
 		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
 	}
 
@@ -399,15 +407,26 @@ public class UsersController {
 		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
 	}
 
+	@Transactional
+	@Operation(summary = "웹 푸시 토큰 저장", description = "웹 푸시 토큰을 저장합니다.")
+	@PostMapping("webpush/token")
+	public ResponseEntity<String> saveWebPushToken(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader, @RequestBody WebPushTokenRequestDto webPushTokenRequest) {
+		String token = authHeader.replace("Bearer ", "");
+		String authEmail = jwtUtil.extractUserEmail(token);
+		String webPushToken = webPushTokenRequest.getToken();
+		usersService.saveWebPushToken(authEmail,webPushToken);
+		return ResponseEntity.status(HttpStatus.OK).body("웹 푸시 토큰 저장 완료");
+  }
+  
 	@Operation(summary = "사용 가능한 역할 목록 조회", description = "시스템에 등록된 모든 역할 목록을 조회합니다.")
-	@GetMapping("roles/available")
+	@GetMapping("role/available")
 	public ResponseEntity<List<RolesDto>> getAvailableRoles() {
 		List<RolesDto> roles = rolesService.getAllRoles();
 		return ResponseEntity.status(HttpStatus.OK).body(roles);
 	}
 
 	@Operation(summary = "사용자 승인된 권한 목록 조회", description = "현재 로그인한 사용자의 권한을 조회합니다.")
-	@GetMapping("roles/current")
+	@GetMapping("role/current")
 	public ResponseEntity<List<RoleAssignmentDto>> getCurrentUserRoles(@Parameter(hidden = true) @RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.replace("Bearer ", "");
 		String authEmail = jwtUtil.extractUserEmail(token);
