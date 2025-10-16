@@ -1,7 +1,9 @@
 package com.project.mog.service.users;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.project.mog.repository.auth.AuthEntity;
 import com.project.mog.repository.bios.BiosEntity;
@@ -25,12 +27,12 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class UsersDto {
-	@Schema(description = "usersId",example="1")
+	@Schema(hidden = true)
 	private long usersId;
 	@Nullable
 	private BiosDto biosDto;
 	private AuthDto authDto;
-	private RoleAssignmentDto roleAssignmentDto;
+	private List<RoleAssignmentDto> roleAssignments;
 	@Schema(description = "usersName",example="테스트유저")
 	private String usersName;
 	@Schema(description = "nickName",example="테스트닉네임")
@@ -41,8 +43,9 @@ public class UsersDto {
 	private String profileImg;
 	@Schema(description = "phoneNum", example="01012345678")
 	private String phoneNum;
-	
+	@Schema(hidden = true)
 	private LocalDateTime regDate;
+	@Schema(hidden = true)
 	private LocalDateTime updateDate;
 	
 	public UsersEntity toEntity() {
@@ -53,7 +56,6 @@ public class UsersDto {
 					.email(email)
 					.profileImg(profileImg)
 					.phoneNum(phoneNum)
-					.roleAssignment(roleAssignmentDto.toEntity()) 
 					.regDate(regDate) 
 					.updateDate(updateDate) 
 					.bios(Optional.ofNullable(biosDto).map(BiosDto::toEntity).orElse(null))
@@ -69,10 +71,9 @@ public class UsersDto {
 			aEntity.setUser(uEntity);
 			uEntity.setAuth(aEntity);
 		}
-		if(roleAssignmentDto!=null) {
-			RoleAssignmentEntity rEntity = roleAssignmentDto.toEntity();
-			rEntity.setUser(uEntity);
-			uEntity.setRoleAssignment(rEntity);
+		if(roleAssignments!=null) {
+			List<RoleAssignmentEntity> rEntity = roleAssignments.stream().map(RoleAssignmentDto::toEntity).collect(Collectors.toList());
+			rEntity.forEach(r->r.setUser(uEntity));
 		}
 		return uEntity;
 	}
@@ -86,7 +87,7 @@ public class UsersDto {
 				.email(uEntity.getEmail())
 				.profileImg(uEntity.getProfileImg())
 				.phoneNum(uEntity.getPhoneNum())
-				.roleAssignmentDto(RoleAssignmentDto.toDto(uEntity.getRoleAssignment()))
+				.roleAssignments(RoleAssignmentDto.toDto(uEntity.getRoleAssignments()))
 				.regDate(uEntity.getRegDate())
 				.updateDate(uEntity.getUpdateDate())
 				.biosDto(BiosDto.toDto(uEntity.getBios()))

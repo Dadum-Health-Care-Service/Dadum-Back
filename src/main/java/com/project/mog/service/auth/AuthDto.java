@@ -17,17 +17,21 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class AuthDto {
-	@Schema(description = "authId",example="1")
+	@Schema(hidden = true)
 	private long authId;
 	@Schema(description = "password",example="testuser1")
 	private String password;
+	@Schema(hidden = true)
 	private LocalDateTime connectTime;
+	@Schema(description = "webPushToken",example="webPushToken")
+	private String webPushToken;
 	
 	public AuthEntity toEntity() {
 			return AuthEntity.builder()
 					.authId(authId)
 					.password(password)
 					.connectTime(connectTime)
+					.webPushToken(webPushToken)
 					.build();
 	}
 	
@@ -37,6 +41,7 @@ public class AuthDto {
 				.authId(aEntity.getAuthId())
 				.password(aEntity.getPassword())
 				.connectTime(aEntity.getConnectTime())
+				.webPushToken(aEntity.getWebPushToken())
 				.build();
 	}
 

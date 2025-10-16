@@ -41,7 +41,7 @@ public class RoleAssignmentEntity {
     @Column(nullable=false)
     private Long isActive;
 
-    @Column(nullable=true,updatable = false)
+    @Column(nullable=true)
 	private LocalDateTime assignedAt;
     
     @Column(nullable=true)
@@ -57,11 +57,11 @@ public class RoleAssignmentEntity {
 		this.expiredAt= LocalDateTime.now().plusDays(30);		
 	}
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "usersId", referencedColumnName = "usersId", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "usersId", nullable = false)
     private UsersEntity user;
 
-    @ManyToOne( cascade = CascadeType.ALL)
-    @JoinColumn(name = "roleId", referencedColumnName = "roleId", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "roleId", nullable = false)
     private RolesEntity role;
 }

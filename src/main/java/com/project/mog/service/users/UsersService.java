@@ -43,6 +43,7 @@ import com.project.mog.repository.routine.RoutineEntity;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.project.mog.repository.role.RoleAssignmentEntity;
+import com.project.mog.repository.role.RoleAssignmentRepository;
 import com.project.mog.repository.role.RolesEntity;
 import com.project.mog.repository.role.RolesRepository;
 import com.project.mog.service.role.RoleAssignmentDto;
@@ -61,6 +62,7 @@ public class UsersService {
 		private PostService postService;
 		private RoutineRepository routineRepository;
 		private RoutineEndTotalRepository routineEndTotalRepository;
+		private RoleAssignmentRepository roleAssignmentRepository;
 		
 		
 
@@ -75,7 +77,8 @@ public class UsersService {
 							OrderRepository orderRepository,
 						RolesRepository rolesRepository,
 						RoutineRepository routineRepository,
-						RoutineEndTotalRepository routineEndTotalRepository) {
+						RoutineEndTotalRepository routineEndTotalRepository,
+						RoleAssignmentRepository roleAssignmentRepository) {
 			this.usersRepository=usersRepository;
 			this.biosRepository=biosRepository;
 			this.authRepository=authRepository;
@@ -85,6 +88,7 @@ public class UsersService {
 			this.postService=postService;
 			this.routineRepository=routineRepository;
 			this.routineEndTotalRepository=routineEndTotalRepository;
+			this.roleAssignmentRepository=roleAssignmentRepository;
 		}
 
 
@@ -100,27 +104,21 @@ public class UsersService {
 			
 			if(isDuplicated!=null) throw new IllegalArgumentException("중복된 아이디입니다");
 
-			
-			// 기본 역할을 USER로 설정
-			if (usersDto.getRoleAssignmentDto() == null || usersDto.getRoleAssignmentDto().getRolesDto().getRoleName().trim().isEmpty()) {
-				RoleAssignmentEntity roleAssignment = RoleAssignmentEntity.builder().isActive(1L).assignedAt(LocalDateTime.now()).expiredAt(LocalDateTime.now().plusDays(30)).build();
-				roleAssignment.setRole(role);
-				usersDto.setRoleAssignmentDto(RoleAssignmentDto.toDto(roleAssignment));
-			}
-			
-            // UsersEntity로 변환 (비밀번호 암호화 없이)
-            UsersEntity uEntity = usersDto.toEntity();
+			UsersEntity uEntity = usersDto.toEntity();
 
-            // ROLE 중복 생성 방지: 영속 ROLE로 강제 치환
-            if (uEntity.getRoleAssignment() != null && uEntity.getRoleAssignment().getRole() != null) {
-                String roleNameResolved = uEntity.getRoleAssignment().getRole().getRoleName();
-                RolesEntity persistentRole = rolesRepository.findByRoleName(roleNameResolved)
-                        .orElseThrow(() -> new IllegalArgumentException("역할이 존재하지 않습니다: " + roleNameResolved));
-                uEntity.getRoleAssignment().setRole(persistentRole);
-            }
+			RoleAssignmentEntity roleAssignment = RoleAssignmentEntity.builder()
+					.isActive(1L)
+					.assignedAt(LocalDateTime.now())
+					.expiredAt(LocalDateTime.now().plusDays(30))
+					.role(role)
+					.user(uEntity)
+					.build();
 
-            UsersEntity savedEntity = usersRepository.save(uEntity);
+			uEntity.getRoleAssignments().add(roleAssignment);
+			usersRepository.save(uEntity); // cascade로 RoleAssignment도 함께 저장
+
 			return UsersDto.toDto(uEntity);
+
 		}
 
 
@@ -132,30 +130,25 @@ public class UsersService {
 			return usersRepository.findByEmail(email).map(uEntity->UsersInfoDto.toDto(uEntity)).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 		}
 
-		public UsersInfoDto deleteUser(Long usersId, String authEmail) {
-			// 현재 로그인한 사용자 정보 조회
-			UsersEntity currentUser = usersRepository.findByEmail(authEmail)
-				.orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다"));
+	public UsersInfoDto deleteUser(Long usersId, String authEmail) {
+		// 권한 확인이 필요한 부분이므로 역할 정보까지 포함한 조회 사용
+		UsersEntity currentUser = usersRepository.findByEmailWithRole(authEmail)
+			.orElseThrow(() -> new IllegalArgumentException("유효하지 않은 사용자입니다"));
 			
 			// 삭제할 사용자 정보 조회
 			UsersEntity targetUser = usersRepository.findById(usersId)
 				.orElseThrow(() -> new RuntimeException("삭제할 사용자를 찾을 수 없습니다"));
 			
 			// 권한 검증: SUPER_ADMIN이거나 자기 자신인 경우만 삭제 가능
-			if (!currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
+			if (!currentUser.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN") && currentUser.getUsersId() != usersId) {
 				throw new AccessDeniedException("자기 자신만 삭제 가능합니다");
 			}
 			
 			// SUPER_ADMIN은 자기 자신을 삭제할 수 없음
-			if (currentUser.getRoleAssignment().getRole().getRoleName().equals("SUPER_ADMIN") && currentUser.getUsersId() == usersId) {
+			if (currentUser.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN") && currentUser.getUsersId() == usersId) {
 				throw new AccessDeniedException("최고 관리자는 자기 자신을 삭제할 수 없습니다");
 			}
-			
-			// ADMIN은 다른 ADMIN을 삭제할 수 없음
-			if (currentUser.getRoleAssignment().getRole().getRoleName().equals("ADMIN") && targetUser.getRoleAssignment().getRole().getRoleName().equals("ADMIN")) {
-				throw new AccessDeniedException("일반 관리자는 다른 관리자를 삭제할 수 없습니다");
-			}
-			
+
 			//user삭제 전 연결되어있는 데이터 먼저 삭제
 			healthConnectService.deleteHealthConnectDataByUsersId(usersId); //healthConnect삭제로 연결되어있는 heartRateData,StepData 함께 삭제
 			postService.deleteByUsersId(usersId); //post삭제로 연결되어있는 comment,like 함께 삭제
@@ -369,6 +362,19 @@ public class UsersService {
 					.completed(completedToday)
 					.build();
 			}).collect(java.util.stream.Collectors.toList());
+		}
+
+
+        public void saveWebPushToken(String authEmail, String webPushToken) {
+            UsersEntity usersEntity = usersRepository.findByEmail(authEmail).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+            AuthEntity authEntity = usersEntity.getAuth();
+			System.out.println(webPushToken);
+			authEntity.setWebPushToken(webPushToken);
+        }
+
+
+		public List<UsersEntity> getUsersByRole(String string) {
+			return usersRepository.findByRoleAssignmentsRoleRoleName(string);
 		}
 		
 }

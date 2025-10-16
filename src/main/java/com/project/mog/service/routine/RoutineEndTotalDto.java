@@ -11,6 +11,7 @@ import com.project.mog.repository.routine.RoutineEndTotalEntity;
 import com.project.mog.repository.routine.RoutineEntity;
 import com.project.mog.repository.routine.RoutineResultEntity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,7 +24,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class RoutineEndTotalDto {
+	@Schema(hidden = true)
 	private long id;
+	@Schema(hidden = true)
 	private long retId;
 	@JsonProperty("tStart")
 	private LocalDateTime tStart;

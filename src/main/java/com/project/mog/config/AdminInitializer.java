@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,20 +34,22 @@ public class AdminInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         
             // admin 계정이 이미 존재하는지 확인
-            var existingAdmin = usersRepository.findByEmail("admin@mog.com");
+            var existingAdmin = usersRepository.findByEmailWithRole("admin@dadum.com");
+
             
             if (existingAdmin.isEmpty()) {
                 // admin 계정 생성 (SUPER_ADMIN 역할)
                 UsersEntity adminUser = UsersEntity.builder()
                         .usersName("관리자")
                         .nickName("admin")
-                        .email("admin@mog.com")
+                        .email("admin@dadum.com")
                         .phoneNum("01000000000")
                         .build();
                 RolesEntity role = RolesEntity.builder().roleName("SUPER_ADMIN").roleDescription("SUPER_ADMIN").build();
+                rolesRepository.save(role);
                 RoleAssignmentEntity roleAssignment = RoleAssignmentEntity.builder().role(role).isActive(1L).assignedAt(LocalDateTime.now()).expiredAt(LocalDateTime.now().plusDays(30)).build();
                 roleAssignment.setUser(adminUser);
-                adminUser.setRoleAssignment(roleAssignment);
+                adminUser.getRoleAssignments().add(roleAssignment);
                 // AuthEntity 생성 (비밀번호 설정 - 평문)
                 AuthEntity adminAuth = new AuthEntity();
                 adminAuth.setPassword("admin1234");
@@ -58,7 +61,7 @@ public class AdminInitializer implements CommandLineRunner {
                 authRepository.save(adminAuth);
                 
                 
-                log.info("Super Admin 계정이 생성되었습니다: admin@mog.com / admin1234");
+                log.info("Super Admin 계정이 생성되었습니다: admin@dadum.com / admin1234");
 
                 // //admin 생성 이후 역할 생성
                 RolesEntity userRole = RolesEntity.builder().roleName("USER").roleDescription("USER").build();
@@ -70,7 +73,7 @@ public class AdminInitializer implements CommandLineRunner {
             } else {
                 // 기존 admin 계정을 SUPER_ADMIN으로 업데이트 (널 세이프)
                 UsersEntity existingUser = existingAdmin.get();
-                var assignment = existingUser.getRoleAssignment();
+                var assignment = existingUser.getRoleAssignments().get(0);
                 if (assignment == null || assignment.getRole() == null ||
                         !"SUPER_ADMIN".equals(assignment.getRole().getRoleName())) {
                     // 역할 갱신은 운영 초기화 단계에서만 필요하므로, NPE 방지를 위해 안전하게 스킵 또는 이후 마이그레이션에서 처리
