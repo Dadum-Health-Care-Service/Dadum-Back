@@ -33,9 +33,9 @@ public class OpenAIClient {
     private int timeoutSeconds;
 
     // OpenAI API 설정 상수
-    private static final String MODEL = "gpt-4o";
+    private static final String MODEL = "gpt-4o-mini";
     private static final double TEMPERATURE = 0.4; // 규칙 준수 향상을 위해 낮춤
-    private static final int MAX_TOKENS = 1000;
+    private static final int MAX_TOKENS = 600; // 응답 속도 향상을 위해 단축
     private static final String DONE_SIGNAL = "[DONE]";
     private static final String API_KEY_ERROR_MESSAGE = "{\"error\": \"OpenAI API 키가 설정되지 않았습니다.\"}";
     private static final String API_CALL_ERROR_MESSAGE = "{\"error\": \"OpenAI API 호출 중 오류가 발생했습니다.\"}";
