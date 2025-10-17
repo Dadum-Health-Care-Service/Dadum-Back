@@ -47,4 +47,13 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
     
     // 주문 ID로 조회
     Optional<OrderEntity> findByOrderId(Long orderId);
+    
+    // 사용자 ID로 주문 조회 (최신순)
+    List<OrderEntity> findByUserIdOrderByCreatedAtDesc(Long userId);
+    
+    // 사용자 ID로 주문 조회 (페이징)
+    Page<OrderEntity> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+    
+    // 사용자 ID와 주문 상태로 조회
+    List<OrderEntity> findByUserIdAndOrderStatusOrderByCreatedAtDesc(Long userId, String orderStatus);
 }

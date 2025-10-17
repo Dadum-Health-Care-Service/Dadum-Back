@@ -66,7 +66,7 @@ public class SecurityConfig {
 						"/api/v1/shop/**",
 						"/api/chat/**",  // 챗봇 API 허용
 						"/api/v1/seller/products/public/**",  // Shop용 public 상품 API 허용
-						"/api/ai/**",  // AI API 허용
+						"/api/v1/ai/**",  // AI API 허용
 						"/ws/**",  // WebSocket 허용
 						"/swagger-ui/*",
 						"/swagger-resources/**",

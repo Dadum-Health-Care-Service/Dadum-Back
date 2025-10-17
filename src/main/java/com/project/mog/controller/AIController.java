@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/ai")
+@RequestMapping("/api/v1/ai")
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "http://localhost:5174"})
 public class AIController {
     
@@ -35,9 +35,14 @@ public class AIController {
     @PostMapping("/detect-fraud")
     public ResponseEntity<FraudDetectionResponse> detectFraud(@RequestBody FraudDetectionRequest request) {
         try {
+            System.out.println("=== 이상거래 탐지 API 호출됨 ===");
+            System.out.println("요청 데이터: " + request);
             FraudDetectionResponse response = aiService.detectFraud(request);
+            System.out.println("탐지 결과: " + response);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.err.println("이상거래 탐지 오류: " + e.getMessage());
+            e.printStackTrace();
             FraudDetectionResponse errorResponse = FraudDetectionResponse.builder()
                 .transactionId(request.getTransactionId())
                 .riskScore(0.0)
@@ -57,19 +62,29 @@ public class AIController {
     public ResponseEntity<Map<String, Object>> checkHealth() {
         Map<String, Object> response = new HashMap<>();
         
-        boolean isHealthy = aiService.isAIServiceHealthy();
-        response.put("ai_service_healthy", isHealthy);
-        response.put("timestamp", java.time.LocalDateTime.now().toString());
-        
-        if (isHealthy) {
-            response.put("status", "healthy");
-            response.put("message", "AI 서비스가 정상적으로 작동 중입니다.");
-        } else {
-            response.put("status", "unhealthy");
-            response.put("message", "AI 서비스에 연결할 수 없습니다.");
+        try {
+            boolean isHealthy = aiService.isAIServiceHealthy();
+            response.put("ai_service_healthy", isHealthy);
+            response.put("timestamp", java.time.LocalDateTime.now().toString());
+            
+            if (isHealthy) {
+                response.put("status", "healthy");
+                response.put("message", "AI 서비스가 정상적으로 작동 중입니다.");
+            } else {
+                response.put("status", "unhealthy");
+                response.put("message", "AI 서비스에 연결할 수 없습니다. 폴링 모드로 전환됩니다.");
+            }
+            
+            System.out.println("AI Health Check Response: " + response);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("AI Health Check Error: " + e.getMessage());
+            response.put("ai_service_healthy", false);
+            response.put("status", "error");
+            response.put("message", "AI 서비스 상태 확인 중 오류가 발생했습니다: " + e.getMessage());
+            response.put("timestamp", java.time.LocalDateTime.now().toString());
+            return ResponseEntity.ok(response); // 오류가 있어도 200 응답으로 반환
         }
-        
-        return ResponseEntity.ok(response);
     }
     
     /**
@@ -88,7 +103,9 @@ public class AIController {
             Map<String, Object> errorStatus = new HashMap<>();
             errorStatus.put("error", "모델 상태 확인 실패: " + e.getMessage());
             errorStatus.put("is_trained", false);
-            return ResponseEntity.ok(errorStatus);
+            errorStatus.put("model_loaded", false);
+            errorStatus.put("timestamp", java.time.LocalDateTime.now().toString());
+            return ResponseEntity.ok(errorStatus); // 오류가 있어도 200 응답으로 반환
         }
     }
     
@@ -164,74 +181,72 @@ public class AIController {
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) Boolean isAnomaly) {
         
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Transaction> transactions;
-        
-        if (userId != null && isAnomaly != null) {
-            if (isAnomaly) {
-                transactions = transactionRepository.findByUserIdAndIsAnomalyTrueOrderByCreatedAtDesc(userId, pageable);
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            Page<Transaction> transactions;
+            
+            if (userId != null && isAnomaly != null) {
+                if (isAnomaly) {
+                    transactions = transactionRepository.findByUserIdAndIsAnomalyTrueOrderByCreatedAtDesc(userId, pageable);
+                } else {
+                    transactions = transactionRepository.findByUserIdAndIsAnomalyFalseOrderByCreatedAtDesc(userId, pageable);
+                }
+            } else if (userId != null) {
+                transactions = transactionRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+            } else if (isAnomaly != null) {
+                if (isAnomaly) {
+                    transactions = transactionRepository.findByIsAnomalyTrueOrderByCreatedAtDesc(pageable);
+                } else {
+                    transactions = transactionRepository.findByIsAnomalyFalseOrderByCreatedAtDesc(pageable);
+                }
             } else {
-                transactions = transactionRepository.findByUserIdAndIsAnomalyFalseOrderByCreatedAtDesc(userId, pageable);
+                transactions = transactionRepository.findAll(pageable);
             }
-        } else if (userId != null) {
-            transactions = transactionRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-        } else if (isAnomaly != null) {
-            if (isAnomaly) {
-                transactions = transactionRepository.findByIsAnomalyTrueOrderByCreatedAtDesc(pageable);
-            } else {
-                transactions = transactionRepository.findByIsAnomalyFalseOrderByCreatedAtDesc(pageable);
-            }
-        } else {
-            // Pageable에 정렬 추가
-            Pageable sortedPageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-            transactions = transactionRepository.findAll(sortedPageable);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("transactions", transactions.getContent());
+            response.put("totalElements", transactions.getTotalElements());
+            response.put("totalPages", transactions.getTotalPages());
+            response.put("currentPage", transactions.getNumber());
+            response.put("size", transactions.getSize());
+            
+            System.out.println("거래 히스토리 조회 응답: " + response);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            System.err.println("거래 히스토리 조회 오류: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "거래 히스토리 조회 실패: " + e.getMessage());
+            errorResponse.put("transactions", new java.util.ArrayList<>());
+            errorResponse.put("totalElements", 0);
+            errorResponse.put("totalPages", 0);
+            errorResponse.put("currentPage", 0);
+            errorResponse.put("size", 0);
+            return ResponseEntity.ok(errorResponse); // 오류가 있어도 200 응답으로 반환
         }
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("transactions", transactions.getContent());
-        response.put("totalElements", transactions.getTotalElements());
-        response.put("totalPages", transactions.getTotalPages());
-        response.put("currentPage", transactions.getNumber());
-        response.put("size", transactions.getSize());
-        
-        return ResponseEntity.ok(response);
     }
     
     /**
-     * 거래 통계 조회
+     * AI 통계 조회
      */
     @GetMapping("/statistics")
     public ResponseEntity<Map<String, Object>> getStatistics() {
-        Map<String, Object> stats = new HashMap<>();
-        
-        // 기본 통계
-        stats.put("totalTransactions", transactionRepository.count());
-        stats.put("anomalyCount", transactionRepository.countAnomalies());
-        stats.put("normalCount", transactionRepository.countNormalTransactions());
-        stats.put("averageRiskScore", transactionRepository.getAverageRiskScore());
-        
-        // 위험도 분포
-        stats.put("riskDistribution", transactionRepository.getRiskDistribution());
-        
-        // 시간대별 통계
-        stats.put("transactionsByHour", transactionRepository.getTransactionCountByHour());
-        
-        // 요일별 통계
-        stats.put("transactionsByDayOfWeek", transactionRepository.getTransactionCountByDayOfWeek());
-        
-        return ResponseEntity.ok(stats);
-    }
-    
-    /**
-     * 특정 거래 상세 조회
-     */
-    @GetMapping("/transactions/{transactionId}")
-    public ResponseEntity<Transaction> getTransaction(@PathVariable String transactionId) {
-        Transaction transaction = transactionRepository.findByTransactionId(transactionId);
-        if (transaction != null) {
-            return ResponseEntity.ok(transaction);
-        } else {
-            return ResponseEntity.notFound().build();
+        try {
+            Map<String, Object> stats = aiService.getStatistics();
+            System.out.println("AI 통계 조회 응답: " + stats);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            System.err.println("통계 조회 오류: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "통계 조회 실패: " + e.getMessage());
+            errorResponse.put("total_transactions", 0);
+            errorResponse.put("anomaly_transactions", 0);
+            errorResponse.put("normal_transactions", 0);
+            errorResponse.put("anomaly_rate", 0.0);
+            errorResponse.put("timestamp", java.time.LocalDateTime.now().toString());
+            return ResponseEntity.ok(errorResponse); // 오류가 있어도 200 응답으로 반환
         }
     }
 }

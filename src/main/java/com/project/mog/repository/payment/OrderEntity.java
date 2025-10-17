@@ -42,6 +42,9 @@ public class OrderEntity {
     @JoinColumn(name = "USER_ID")
     private UsersEntity user;
     
+    @Column(name = "USER_ID", insertable = false, updatable = false)
+    private Long userId;
+    
     @OneToOne
     @JoinColumn(name = "PAYMENT_ID")
     private PaymentEntity payment;
