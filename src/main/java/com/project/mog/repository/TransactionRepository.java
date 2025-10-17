@@ -94,4 +94,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
            "ELSE 'SAFE' " +
            "END")
     List<Object[]> getRiskDistribution();
+    
+    // 이상거래 개수 조회
+    Long countByIsAnomalyTrue();
+    
+    // 정상거래 개수 조회
+    Long countByIsAnomalyFalse();
 }

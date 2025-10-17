@@ -248,6 +248,90 @@ public class AIService {
     }
     
     /**
+     * AI 서비스 상태 확인
+     */
+    public boolean isAIServiceHealthy() {
+        try {
+            // AI 서버 연결 테스트
+            String url = aiServiceUrl + "/health";
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            System.out.println("AI 서비스 상태 확인 응답: " + response.getStatusCode());
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (Exception e) {
+            System.err.println("AI 서비스 상태 확인 실패: " + e.getMessage());
+            System.err.println("AI 서비스 URL: " + aiServiceUrl);
+            return false;
+        }
+    }
+    
+    /**
+     * AI 모델 상태 확인
+     */
+    public Map<String, Object> getModelStatus() {
+        Map<String, Object> status = new HashMap<>();
+        try {
+            String url = aiServiceUrl + "/model-status";
+            System.out.println("AI 모델 상태 확인 URL: " + url);
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            
+            System.out.println("AI 모델 상태 확인 응답: " + response.getStatusCode());
+            if (response.getStatusCode().is2xxSuccessful()) {
+                status.putAll(response.getBody());
+                System.out.println("AI 모델 상태: " + response.getBody());
+            } else {
+                status.put("is_trained", false);
+                status.put("model_loaded", false);
+                status.put("error", "AI 서버에서 모델 상태를 가져올 수 없습니다.");
+            }
+        } catch (Exception e) {
+            System.err.println("모델 상태 확인 실패: " + e.getMessage());
+            System.err.println("AI 서비스 URL: " + aiServiceUrl);
+            status.put("is_trained", false);
+            status.put("model_loaded", false);
+            status.put("error", "AI 서버 연결 실패: " + e.getMessage());
+        }
+        return status;
+    }
+    
+    /**
+     * AI 모델 훈련
+     */
+    public boolean trainModel() {
+        try {
+            String url = aiServiceUrl + "/train";
+            ResponseEntity<String> response = restTemplate.postForEntity(url, null, String.class);
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (Exception e) {
+            System.err.println("모델 훈련 요청 실패: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * AI 통계 조회
+     */
+    public Map<String, Object> getStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        try {
+            // 데이터베이스에서 통계 계산
+            long totalTransactions = transactionRepository.count();
+            long anomalyTransactions = transactionRepository.countByIsAnomalyTrue();
+            long normalTransactions = transactionRepository.countByIsAnomalyFalse();
+            
+            stats.put("total_transactions", totalTransactions);
+            stats.put("anomaly_transactions", anomalyTransactions);
+            stats.put("normal_transactions", normalTransactions);
+            stats.put("anomaly_rate", totalTransactions > 0 ? (double) anomalyTransactions / totalTransactions : 0.0);
+            stats.put("timestamp", java.time.LocalDateTime.now().toString());
+            
+        } catch (Exception e) {
+            System.err.println("통계 조회 실패: " + e.getMessage());
+            stats.put("error", "통계 조회 실패: " + e.getMessage());
+        }
+        return stats;
+    }
+    
+    /**
      * 오류 응답 생성
      */
     private FraudDetectionResponse createErrorResponse(String transactionId, String errorMessage) {
