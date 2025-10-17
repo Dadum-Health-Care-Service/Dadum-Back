@@ -205,8 +205,6 @@ public class AIService {
     }
     
     /**
-<<<<<<< Updated upstream
-=======
      * AI 서비스 상태 확인
      */
     public boolean isAIServiceHealthy() {
@@ -235,9 +233,11 @@ public class AIService {
             
             System.out.println("AI 모델 상태 확인 응답: " + response.getStatusCode());
             if (response.getStatusCode().is2xxSuccessful()) {
+
                 @SuppressWarnings("unchecked")
                 Map<String, Object> responseBody = (Map<String, Object>) response.getBody();
-                status.putAll(responseBody);
+                status.putAll(response.getBody());
+
                 System.out.println("AI 모델 상태: " + response.getBody());
             } else {
                 status.put("is_trained", false);
@@ -291,11 +291,7 @@ public class AIService {
         }
         return stats;
     }
-    
-    /**
->>>>>>> Stashed changes
-     * 오류 응답 생성
-     */
+
     private FraudDetectionResponse createErrorResponse(String transactionId, String errorMessage) {
         return FraudDetectionResponse.builder()
             .transactionId(transactionId)

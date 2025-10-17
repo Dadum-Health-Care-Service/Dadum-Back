@@ -30,7 +30,7 @@ public class Transaction {
     private String userId;
     
     @Column(name = "amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal amount;
+    private BigDecimal amount; 
     
     @Column(name = "timestamp")
     private LocalDateTime timestamp;
