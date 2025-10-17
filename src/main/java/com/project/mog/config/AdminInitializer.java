@@ -38,18 +38,33 @@ public class AdminInitializer implements CommandLineRunner {
 
             
             if (existingAdmin.isEmpty()) {
-                // admin 계정 생성 (SUPER_ADMIN 역할)
+                // SUPER_ADMIN 역할 확인 또는 생성
+                RolesEntity role = rolesRepository.findByRoleName("SUPER_ADMIN")
+                        .orElseGet(() -> {
+                            RolesEntity newRole = RolesEntity.builder()
+                                    .roleName("SUPER_ADMIN")
+                                    .roleDescription("SUPER_ADMIN")
+                                    .build();
+                            return rolesRepository.save(newRole);
+                        });
+                
+                // admin 계정 생성
                 UsersEntity adminUser = UsersEntity.builder()
                         .usersName("관리자")
                         .nickName("admin")
                         .email("admin@dadum.com")
                         .phoneNum("01000000000")
                         .build();
-                RolesEntity role = RolesEntity.builder().roleName("SUPER_ADMIN").roleDescription("SUPER_ADMIN").build();
-                rolesRepository.save(role);
-                RoleAssignmentEntity roleAssignment = RoleAssignmentEntity.builder().role(role).isActive(1L).assignedAt(LocalDateTime.now()).expiredAt(LocalDateTime.now().plusDays(30)).build();
+                
+                RoleAssignmentEntity roleAssignment = RoleAssignmentEntity.builder()
+                        .role(role)
+                        .isActive(1L)
+                        .assignedAt(LocalDateTime.now())
+                        .expiredAt(LocalDateTime.now().plusDays(30))
+                        .build();
                 roleAssignment.setUser(adminUser);
                 adminUser.getRoleAssignments().add(roleAssignment);
+                
                 // AuthEntity 생성 (비밀번호 설정 - 평문)
                 AuthEntity adminAuth = new AuthEntity();
                 adminAuth.setPassword("admin1234");
@@ -60,14 +75,27 @@ public class AdminInitializer implements CommandLineRunner {
                 // AuthEntity를 먼저 저장
                 authRepository.save(adminAuth);
                 
-                
                 log.info("Super Admin 계정이 생성되었습니다: admin@dadum.com / admin1234");
 
-                // //admin 생성 이후 역할 생성
-                RolesEntity userRole = RolesEntity.builder().roleName("USER").roleDescription("USER").build();
-                RolesEntity sellerRole = RolesEntity.builder().roleName("SELLER").roleDescription("SELLER").build();
-                rolesRepository.save(userRole);
-                rolesRepository.save(sellerRole);
+                // USER, SELLER 역할 확인 또는 생성
+                rolesRepository.findByRoleName("USER")
+                        .orElseGet(() -> {
+                            RolesEntity userRole = RolesEntity.builder()
+                                    .roleName("USER")
+                                    .roleDescription("USER")
+                                    .build();
+                            return rolesRepository.save(userRole);
+                        });
+                
+                rolesRepository.findByRoleName("SELLER")
+                        .orElseGet(() -> {
+                            RolesEntity sellerRole = RolesEntity.builder()
+                                    .roleName("SELLER")
+                                    .roleDescription("SELLER")
+                                    .build();
+                            return rolesRepository.save(sellerRole);
+                        });
+                
                 log.info("역할이 정상적으로 생성되었습니다.");
 
             } else {
