@@ -259,8 +259,8 @@ public class AIService {
      */
     public boolean trainModel() {
         try {
-            String url = aiServiceUrl + "/train";
-            ResponseEntity<String> response = restTemplate.postForEntity(url, null, String.class);
+            String url = aiServiceUrl + "/ai/train-model";
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, null, Map.class);
             return response.getStatusCode().is2xxSuccessful();
         } catch (Exception e) {
             System.err.println("모델 훈련 요청 실패: " + e.getMessage());
