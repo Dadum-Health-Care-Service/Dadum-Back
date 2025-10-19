@@ -1,5 +1,5 @@
 server: #디폴트 8080
-  port: 8080 
+  port: 8080
   servlet:
     session:
       timeout: 1800 #30분이 기본값
@@ -15,9 +15,9 @@ spring:
     encoding: UTF-8
   #정적자원의 디폴트 설정
   mvc:
-    static-path-pattern: /** 
+    static-path-pattern: /**
   web:
-    resources:      
+    resources:
       static-location: classpath:/static/ #정적자원의 물리적 위치
       add-mappings: true #자동 매핑 활성화(true:기본값),비 활성화시(false) path-pattern 및 static-location등이 적용되지 않는다
   #데이타 베이스 연결을 위한 설정
@@ -29,9 +29,9 @@ spring:
   #스프링 부트의 디폴트 커넥션 풀인 Hikari 디폴트 설정.
   #https://github.com/brettwooldridge/HikariCP?tab=readme-ov-file#frequently-used
   hikari: #선택 사항(스프링 부트는 hikari가 기본 CP다)
-    auto-commit: true     
+    auto-commit: true
     connection-timeout: 30000
-    maximum-pool-size: 10 
+    maximum-pool-size: 10
   #Spring Data JPA 설정
   jpa:
     hibernate:
@@ -55,9 +55,9 @@ spring:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
       mail.smtp.ssl.protocols: TLSv1.2
-      
+
 jwttoken:
-  secret-key: Nf/vIRqt0/bKThqJ6tOy2M9tqJX+rJxGG9HrZgsBrT4=                                                                                                                                            
+  secret-key: Nf/vIRqt0/bKThqJ6tOy2M9tqJX+rJxGG9HrZgsBrT4=
 
 openai:
   api:
@@ -83,3 +83,6 @@ logging:
   level:
     com.project.mog.controller.chatbot: DEBUG
 
+discord:
+  webhook:
+    url: "${DISCORD_WEBHOOK_URL:}"

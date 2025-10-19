@@ -18,6 +18,13 @@ public class WebClientConfig {
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024)) // 1MB
                 .build();
     }
+
+    @Bean
+    public WebClient discordWebClient() {
+        return WebClient.builder()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024)) // 1MB
+                .build();
+    }
 }
 
 
