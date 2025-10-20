@@ -22,4 +22,5 @@ public class ProductDto {
     private String badge;
     private String description;
     private String detailedDescription;
+    private Integer stock;
 }

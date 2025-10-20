@@ -36,4 +36,16 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
     @Query("SELECT p FROM ProductEntity p WHERE p.sellerId = :sellerId AND p.productName LIKE %:keyword%")
     List<ProductEntity> findBySellerIdAndProductNameContaining(@Param("sellerId") Long sellerId, 
                                                                @Param("keyword") String keyword);
+    
+    // Shop용: 모든 활성 상품 조회
+    @Query("SELECT p FROM ProductEntity p WHERE p.isActive = true")
+    List<ProductEntity> findAllActiveProducts();
+    
+    // Shop용: 카테고리별 활성 상품 조회
+    @Query("SELECT p FROM ProductEntity p WHERE p.isActive = true AND p.category = :category")
+    List<ProductEntity> findActiveProductsByCategory(@Param("category") String category);
+    
+    // Shop용: 특정 상품 조회 (활성 상품만)
+    @Query("SELECT p FROM ProductEntity p WHERE p.productId = :productId AND p.isActive = true")
+    Optional<ProductEntity> findActiveProductById(@Param("productId") Long productId);
 }
