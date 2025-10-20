@@ -132,7 +132,6 @@ public class OrderController {
             }
             
             // 주문 상태를 취소로 변경
-
             order.setOrderStatus("CANCELLED");
             orderRepository.save(order);
             

@@ -66,7 +66,9 @@ public class SecurityConfig {
 						"/api/v1/shop/**",
 						"/api/v1/news/**",
 						"/api/v1/discord/**",
-						"/api/chat/**",  // 챗봇 API 허용
+						"/api/v1/orders/**",
+						"/api/v1/firewall/**",
+						"/api/v1/chat/**",  // 챗봇 API 허용
 						"/api/v1/seller/products/public/**",  // Shop용 public 상품 API 허용
 						"/api/v1/ai/**",  // AI API 허용
 						"/ws/**",  // WebSocket 허용
@@ -133,7 +135,8 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of(
             "http://localhost:3000",  // 기존 React 개발 서버
             "http://localhost:5173",  // Vite 개발 서버 (챗봇용)
-            "http://localhost:5174"   // Vite 대체 포트 (챗봇용)
+            "http://localhost:5174",   // Vite 대체 포트 (챗봇용)
+            "http://192.168.0.51:3000"
         ));
         
         // 허용할 HTTP 메서드 설정

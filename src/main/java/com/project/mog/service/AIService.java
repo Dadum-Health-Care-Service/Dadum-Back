@@ -157,6 +157,49 @@ public class AIService {
             throw new RuntimeException("AI 서비스 오류: " + e.getMessage());
         }
     }
+    
+    /**
+     * AI 서버 상태 확인
+     */
+//    public boolean isAIServiceHealthy() {
+//        try {
+//            String url = aiServiceUrl + "/health/";
+//            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+//            return response.getStatusCode().is2xxSuccessful();
+//        } catch (Exception e) {
+//            return false;
+//        }
+//    }
+    
+    /**
+     * AI 모델 상태 확인
+     */
+//    public Map<String, Object> getModelStatus() {
+//        try {
+//            String url = aiServiceUrl + "/ai/model-status";
+//            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+//            return response.getBody();
+//        } catch (Exception e) {
+//            Map<String, Object> errorStatus = new HashMap<>();
+//            errorStatus.put("error", "AI 모델 상태 확인 실패: " + e.getMessage());
+//            errorStatus.put("is_trained", false);
+//            return errorStatus;
+//        }
+//    }
+    
+    /**
+     * AI 모델 훈련 요청
+     */
+//    public boolean trainModel() {
+//        try {
+//            String url = aiServiceUrl + "/ai/train-model";
+//            ResponseEntity<Map> response = restTemplate.postForEntity(url, null, Map.class);
+//            return response.getStatusCode().is2xxSuccessful();
+//        } catch (Exception e) {
+//            return false;
+//        }
+//    }
+    
     /**
      * 거래 정보를 데이터베이스에 저장
      */
