@@ -227,7 +227,7 @@ public class AIService {
     public Map<String, Object> getModelStatus() {
         Map<String, Object> status = new HashMap<>();
         try {
-            String url = aiServiceUrl + "/model-status";
+            String url = aiServiceUrl + "/ai/model-status";
             System.out.println("AI 모델 상태 확인 URL: " + url);
             ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
             
