@@ -47,6 +47,7 @@ public class FirebaseService {
             Map<String,String> data = new HashMap<>();
             data.put("title", title);
             data.put("body", body);
+            data.put("type", "REQUEST_ROLE");
             Message message = Message.builder()
                 .setToken(token)
                 .putAllData(data)

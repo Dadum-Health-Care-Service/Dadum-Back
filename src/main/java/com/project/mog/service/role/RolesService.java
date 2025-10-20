@@ -81,7 +81,7 @@ public class RolesService {
         UsersEntity usersEntity = usersRepository.findByEmailWithRole(authEmail).orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다"));
         if(usersEntity.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN")) {
             UsersEntity targetUsersEntity = usersRepository.findById(usersId).orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다"));
-            RoleAssignmentEntity roleAssignmentEntity = targetUsersEntity.getRoleAssignments().stream().filter(r -> r.getAssignmentId()==rolePermitDto.getAssignmentId()).findFirst().orElseThrow(() -> new IllegalArgumentException("해당 권한을 찾을 수 없습니다"));
+            RoleAssignmentEntity roleAssignmentEntity = targetUsersEntity.getRoleAssignments().stream().filter(r -> r.getAssignmentId().equals(rolePermitDto.getAssignmentId())).findFirst().orElseThrow(() -> new IllegalArgumentException("해당 권한을 찾을 수 없습니다"));
             roleAssignmentEntity.setIsActive(1L);
             roleAssignmentEntity.setExpiredAt(LocalDateTime.now().plusDays(30));
             roleAssignmentEntity.setAssignedAt(LocalDateTime.now());
