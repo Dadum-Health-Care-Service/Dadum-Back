@@ -38,7 +38,7 @@ public class FraudDetectionRequest {
             .userId(userId)
             .timestamp(now.toString())
             .hour(now.getHour())
-            .dayOfWeek(now.getDayOfWeek().getValue() - 1) // 0-6으로 변환
+            .dayOfWeek(now.getDayOfWeek().getValue() == 7 ? 0 : now.getDayOfWeek().getValue()) // 대한민국 표준: 0=일요일, 1=월요일, ..., 6=토요일
             .transactionCount24h(1) // 기본값
             .avgAmount7d(amount) // 기본값
             .locationDistance(0.0) // 기본값

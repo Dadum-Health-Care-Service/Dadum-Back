@@ -19,7 +19,9 @@ import org.springframework.web.client.ResourceAccessException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -270,7 +272,7 @@ public class AIService {
     public Map<String, Object> getModelStatus() {
         Map<String, Object> status = new HashMap<>();
         try {
-            String url = aiServiceUrl + "/model-status";
+            String url = aiServiceUrl + "/ai/model-status";
             System.out.println("AI 모델 상태 확인 URL: " + url);
             ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
             
@@ -327,6 +329,36 @@ public class AIService {
             stats.put("normal_transactions", normalTransactions);
             stats.put("anomaly_rate", totalTransactions > 0 ? (double) anomalyTransactions / totalTransactions : 0.0);
             stats.put("timestamp", java.time.LocalDateTime.now().toString());
+            
+            // 시간대별 거래 통계 추가
+            List<Object[]> hourlyStats = transactionRepository.getTransactionCountByHour();
+            List<int[]> transactionsByHour = new ArrayList<>();
+            for (Object[] result : hourlyStats) {
+                int hour = ((Number) result[0]).intValue();
+                long count = ((Number) result[1]).longValue();
+                transactionsByHour.add(new int[]{hour, (int) count});
+            }
+            stats.put("transactionsByHour", transactionsByHour);
+            
+            // 요일별 거래 통계 추가
+            List<Object[]> dailyStats = transactionRepository.getTransactionCountByDayOfWeek();
+            List<int[]> transactionsByDayOfWeek = new ArrayList<>();
+            for (Object[] result : dailyStats) {
+                int dayOfWeek = ((Number) result[0]).intValue();
+                long count = ((Number) result[1]).longValue();
+                transactionsByDayOfWeek.add(new int[]{dayOfWeek, (int) count});
+            }
+            stats.put("transactionsByDayOfWeek", transactionsByDayOfWeek);
+            
+            // 위험도 분포 통계 추가
+            List<Object[]> riskStats = transactionRepository.getRiskDistribution();
+            List<Object[]> riskDistribution = new ArrayList<>();
+            for (Object[] result : riskStats) {
+                String riskLevel = (String) result[0];
+                long count = ((Number) result[1]).longValue();
+                riskDistribution.add(new Object[]{riskLevel, (int) count});
+            }
+            stats.put("riskDistribution", riskDistribution);
             
         } catch (Exception e) {
             System.err.println("통계 조회 실패: " + e.getMessage());
