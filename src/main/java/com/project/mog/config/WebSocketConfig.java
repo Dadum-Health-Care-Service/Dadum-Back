@@ -24,10 +24,5 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws/fraud-monitor")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
-        
-        // 모임 기능을 위한 웹소켓 엔드포인트 추가
-        registry.addEndpoint("/ws/gathering")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
     }
 }
