@@ -1,0 +1,22 @@
+-- Map 관련 시퀀스 생성 스크립트
+
+-- Location 시퀀스
+CREATE SEQUENCE SEQ_LOCATION
+    START WITH 1
+    INCREMENT BY 1
+    NOCACHE
+    NOCYCLE;
+
+-- Place 시퀀스  
+CREATE SEQUENCE SEQ_PLACE
+    START WITH 1
+    INCREMENT BY 1
+    NOCACHE
+    NOCYCLE;
+
+-- Vote 시퀀스
+CREATE SEQUENCE SEQ_VOTE
+    START WITH 1
+    INCREMENT BY 1
+    NOCACHE
+    NOCYCLE;

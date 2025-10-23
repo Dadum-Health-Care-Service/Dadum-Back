@@ -23,7 +23,7 @@ public class HealthConnectEntity {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "health_connect_id")
+	@Column(name = "healthConnectId")
 	private Long id;
 	
 	@OneToMany(mappedBy = "healthConnect", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -55,6 +55,7 @@ public class HealthConnectEntity {
 	private Long deepSleepMinutes;
 	private Long remSleepMinutes;
 	private Long lightSleepMinutes;
+	private String currentTime;
 	
 	@ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usersid", referencedColumnName="usersId", nullable = false)
@@ -62,7 +63,7 @@ public class HealthConnectEntity {
 	
 	public HealthConnectEntity(UsersEntity user,double caloriesBurnedData, double distanceWalked,
 							double activeCaloriesBurned, Long totalSleepMinutes, Long deepSleepMinutes,
-							Long remSleepMinutes, Long lightSleepMinutes) {
+							Long remSleepMinutes, Long lightSleepMinutes, String currentTime) {
 		this.user=user;
 		this.caloriesBurnedData=caloriesBurnedData;
 		this.distanceWalked=distanceWalked;
@@ -71,6 +72,7 @@ public class HealthConnectEntity {
 		this.deepSleepMinutes=deepSleepMinutes;
 		this.remSleepMinutes=remSleepMinutes;
 		this.lightSleepMinutes=lightSleepMinutes;
+		this.currentTime = currentTime;
 	}
 	
 }

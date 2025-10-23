@@ -48,6 +48,15 @@ public class ProductEntity {
     @Column(name = "image_data", columnDefinition = "CLOB")
     private String imageData;
     
+    @Column(name = "detail_file_url", length = 500)
+    private String detailFileUrl;
+    
+    @Column(name = "detail_file_data", columnDefinition = "CLOB")
+    private String detailFileData;
+    
+    @Column(name = "detail_file_type", length = 100)
+    private String detailFileType;
+    
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
     

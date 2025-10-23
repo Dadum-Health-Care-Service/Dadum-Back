@@ -24,6 +24,9 @@ public class PostDto {
     private LocalDateTime postUpDate;  // 수정 시각
     @Schema(hidden = true)
     private Long usersId;        // 작성자 ID
+    private String userName;     // 작성자 이름
+    private String userEmail;    // 작성자 이메일
+    private String profileImage; // 작성자 프로필 이미지
 
 
     public PostEntity toEntity() {
@@ -41,6 +44,9 @@ public class PostDto {
     	return PostDto.builder()
     			.postId(postEntity.getPostId())
     			.usersId(postEntity.getUser().getUsersId())
+    			.userName(postEntity.getUser().getNickName())
+    			.userEmail(postEntity.getUser().getEmail())
+    			.profileImage(postEntity.getUser().getProfileImg())
     			.postTitle(postEntity.getPostTitle())
     			.postContent(postEntity.getPostContent())
     			.postImage(postEntity.getPostImage())

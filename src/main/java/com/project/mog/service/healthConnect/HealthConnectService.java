@@ -37,6 +37,7 @@ public class HealthConnectService {
 		healthConnectEntity.setDeepSleepMinutes(heDto.getDeepSleepMinutes());
 		healthConnectEntity.setRemSleepMinutes(heDto.getRemSleepMinutes());
 		healthConnectEntity.setLightSleepMinutes(heDto.getLightSleepMinutes());
+		healthConnectEntity.setCurrentTime(heDto.getCurrentTime());
 		
 		List<StepDataEntity> stepData = Optional.ofNullable(heDto.getStepData())
 	            .orElse(List.of())
@@ -79,6 +80,14 @@ public class HealthConnectService {
 		healthConnectRepository.deleteAll(entities);
 	}
 	
+	@Transactional
+	public void deleteHealthConnectDataByUsersIdAndHealthId(Long usersId, Long healthId) {
+		UsersEntity user = usersRepository.findById(usersId)
+				.orElseThrow(()-> new EntityNotFoundException("사용자를 찾을 수 없습니다. usersID: "+usersId));
+		HealthConnectEntity entity = healthConnectRepository.findByUsersAndHealth(usersId,healthId);
+		healthConnectRepository.delete(entity);
+	}
+	
 	
 	private HealthConnectDto convertToDto(HealthConnectEntity entity) {
 		List<Integer> stepData = entity.getStepData().stream()
@@ -89,6 +98,7 @@ public class HealthConnectService {
 				.collect(Collectors.toList());
 		
 		return HealthConnectDto.builder()
+				.healthId(entity.getId())
 				.stepData(stepData)
 				.heartRateData(heartRateData)
 				.caloriesBurnedData(entity.getCaloriesBurnedData())
@@ -98,6 +108,7 @@ public class HealthConnectService {
 				.deepSleepMinutes(entity.getDeepSleepMinutes())
 				.remSleepMinutes(entity.getRemSleepMinutes())
 				.lightSleepMinutes(entity.getLightSleepMinutes())
+				.currentTime(entity.getCurrentTime())
 				.build();
 	}
 	
