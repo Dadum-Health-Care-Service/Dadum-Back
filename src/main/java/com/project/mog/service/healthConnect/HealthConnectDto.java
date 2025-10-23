@@ -23,6 +23,7 @@ public class HealthConnectDto {
 	private Long deepSleepMinutes;
 	private Long remSleepMinutes;
 	private Long lightSleepMinutes;
+	private String currentTime;
 	
 	@Getter
 	@Setter

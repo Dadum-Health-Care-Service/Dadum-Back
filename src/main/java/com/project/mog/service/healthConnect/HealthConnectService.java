@@ -37,6 +37,7 @@ public class HealthConnectService {
 		healthConnectEntity.setDeepSleepMinutes(heDto.getDeepSleepMinutes());
 		healthConnectEntity.setRemSleepMinutes(heDto.getRemSleepMinutes());
 		healthConnectEntity.setLightSleepMinutes(heDto.getLightSleepMinutes());
+		healthConnectEntity.setCurrentTime(heDto.getCurrentTime());
 		
 		List<StepDataEntity> stepData = Optional.ofNullable(heDto.getStepData())
 	            .orElse(List.of())
@@ -98,6 +99,7 @@ public class HealthConnectService {
 				.deepSleepMinutes(entity.getDeepSleepMinutes())
 				.remSleepMinutes(entity.getRemSleepMinutes())
 				.lightSleepMinutes(entity.getLightSleepMinutes())
+				.currentTime(entity.getCurrentTime())
 				.build();
 	}
 	
