@@ -14,6 +14,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class HealthConnectDto {
+	private Long healthId;
 	private List<Integer> stepData;
 	private List<HeartRateDataDto> heartRateData;
 	private double caloriesBurnedData;

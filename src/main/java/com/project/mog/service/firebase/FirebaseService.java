@@ -6,6 +6,8 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
+import com.google.firebase.messaging.WebpushConfig;
+import com.google.firebase.messaging.WebpushNotification;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +56,15 @@ public class FirebaseService {
                 .setNotification(Notification.builder()
                     .setTitle(title)
                     .setBody(body)
+                    .setImage("/img/Dadum-icon.png")
+                    .build())
+                .setWebpushConfig(WebpushConfig.builder()
+                    .setNotification(WebpushNotification.builder()
+                        .setIcon("/img/Dadum-icon.png")
+                        .setBadge("/img/Dadum-icon.png")
+                        .setTitle(title)
+                        .setBody(body)
+                        .build())
                     .build())
                 .build();
                 
