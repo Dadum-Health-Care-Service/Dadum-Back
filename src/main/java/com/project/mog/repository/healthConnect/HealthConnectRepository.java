@@ -12,7 +12,10 @@ public interface HealthConnectRepository extends JpaRepository<HealthConnectEnti
 	
 	List<HealthConnectEntity> findByUser_usersId(long userId);
 	
-	@Query(nativeQuery = true, value = "SELECT * FROM health_connect WHERE usersId=?1 ORDER BY healthdataid DESC LIMIT 1")
+	@Query(nativeQuery = true, value = "SELECT * FROM healthConnect WHERE usersId=?1 ORDER BY healthConnectId DESC")
 	Optional<HealthConnectEntity> findLatestByUsersId(Long usersId);
+	
+	@Query(nativeQuery = true, value = "SELECT * FROM healthConnect WHERE usersId=?1 AND healthConnectId=?2")
+	HealthConnectEntity findByUsersAndHealth(Long usersId, Long healthId);
 	
 }

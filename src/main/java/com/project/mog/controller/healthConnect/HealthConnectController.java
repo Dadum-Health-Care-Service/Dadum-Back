@@ -62,7 +62,7 @@ public class HealthConnectController {
 	}
 	
 	@DeleteMapping("/{usersId}")
-	@Operation(summary = "헬스커넥트 데이터 삭제", description = "헬스커넥트 데이터를 삭제합니다.")
+	@Operation(summary = "헬스커넥트 전체 데이터 삭제", description = "헬스커넥트 전체 데이터를 삭제합니다.")
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", description = "헬스커넥트 데이터 삭제 성공"),
 		@ApiResponse(responseCode = "401", description = "인증 실패")
@@ -70,6 +70,17 @@ public class HealthConnectController {
 	public ResponseEntity<HealthConnectResponseDto> deleteHealthConnectData(@PathVariable Long usersId){
 		healthConnectService.deleteHealthConnectDataByUsersId(usersId);
 		return ResponseEntity.ok(new HealthConnectResponseDto("해당유저의 모든 헬스커넥트 데이터가 성공적으로 삭제되었습니다"));
+	}
+	
+	@DeleteMapping("/{usersId}/health/{healthId}")
+	@Operation(summary = "헬스커넥트 단일 데이터 삭제", description = "헬스커넥트 단일 데이터를 삭제합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "헬스커넥트 데이터 삭제 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 실패")
+	})
+	public ResponseEntity<HealthConnectResponseDto> deleteSingleHealthConnectData(@PathVariable Long usersId, @PathVariable Long healthId){
+		healthConnectService.deleteHealthConnectDataByUsersIdAndHealthId(usersId,healthId);
+		return ResponseEntity.ok(new HealthConnectResponseDto("해당유저의 헬스커넥트 데이터가 성공적으로 삭제되었습니다"));
 	}
 
 }

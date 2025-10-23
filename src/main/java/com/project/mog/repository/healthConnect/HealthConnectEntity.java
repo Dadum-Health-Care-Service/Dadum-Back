@@ -23,7 +23,7 @@ public class HealthConnectEntity {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "health_connect_id")
+	@Column(name = "healthConnectId")
 	private Long id;
 	
 	@OneToMany(mappedBy = "healthConnect", cascade = CascadeType.ALL, orphanRemoval = true)
