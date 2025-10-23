@@ -54,7 +54,8 @@ public class ProductManagementService {
      * 상품 등록
      */
     public ProductEntity createProduct(Long sellerId, String productName, String description, 
-                                     BigDecimal price, Integer stock, String category, String imageUrl, String imageData) {
+                                     BigDecimal price, Integer stock, String category, String imageUrl, String imageData,
+                                     String detailFileData, String detailFileType) {
         ProductEntity product = ProductEntity.builder()
                 .sellerId(sellerId)
                 .productName(productName)
@@ -64,6 +65,8 @@ public class ProductManagementService {
                 .category(category)
                 .imageUrl(imageUrl)
                 .imageData(imageData)
+                .detailFileData(detailFileData)
+                .detailFileType(detailFileType)
                 .isActive(true)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -77,7 +80,8 @@ public class ProductManagementService {
      */
     public ProductEntity updateProduct(Long productId, Long sellerId, String productName, 
                                      String description, BigDecimal price, Integer stock, 
-                                     String category, String imageUrl, String imageData, Boolean isActive) {
+                                     String category, String imageUrl, String imageData, 
+                                     String detailFileData, String detailFileType, Boolean isActive) {
         ProductEntity product = productRepository.findByProductId(productId)
                 .filter(p -> p.getSellerId().equals(sellerId))
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
@@ -89,6 +93,8 @@ public class ProductManagementService {
         product.setCategory(category);
         product.setImageUrl(imageUrl);
         product.setImageData(imageData);
+        product.setDetailFileData(detailFileData);
+        product.setDetailFileType(detailFileType);
         product.setIsActive(isActive);
         product.setUpdatedAt(LocalDateTime.now());
         

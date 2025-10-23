@@ -23,4 +23,6 @@ public class ProductDto {
     private String description;
     private String detailedDescription;
     private Integer stock;
+    private String detailFile;
+    private String detailFileType;
 }

@@ -119,9 +119,11 @@ public class ProductManagementController {
             String category = (String) productData.get("category");
             String imageUrl = (String) productData.get("imageUrl");
             String imageData = (String) productData.get("imageData");
+            String detailFileData = (String) productData.get("detailFileData");
+            String detailFileType = (String) productData.get("detailFileType");
             
             ProductEntity product = productManagementService.createProduct(
-                sellerId, productName, description, price, stock, category, imageUrl, imageData);
+                sellerId, productName, description, price, stock, category, imageUrl, imageData, detailFileData, detailFileType);
             
             return ResponseEntity.ok(product);
             
@@ -152,10 +154,12 @@ public class ProductManagementController {
             String category = (String) productData.get("category");
             String imageUrl = (String) productData.get("imageUrl");
             String imageData = (String) productData.get("imageData");
+            String detailFileData = (String) productData.get("detailFileData");
+            String detailFileType = (String) productData.get("detailFileType");
             Boolean isActive = Boolean.valueOf(productData.get("isActive").toString());
             
             ProductEntity product = productManagementService.updateProduct(
-                productId, sellerId, productName, description, price, stock, category, imageUrl, imageData, isActive);
+                productId, sellerId, productName, description, price, stock, category, imageUrl, imageData, detailFileData, detailFileType, isActive);
             
             return ResponseEntity.ok(product);
             

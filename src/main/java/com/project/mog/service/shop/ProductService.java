@@ -43,6 +43,7 @@ public class ProductService {
     private ProductDto convertToDto(ProductEntity entity) {
         // 이미지 URL 처리 개선
         String imageUrl = getImageUrl(entity);
+        String detailFile = getDetailFile(entity);
         
         return ProductDto.builder()
                 .id(entity.getProductId())
@@ -55,6 +56,8 @@ public class ProductService {
                 .description(entity.getDescription())
                 .detailedDescription(entity.getDescription()) // 상세 설명이 없으므로 설명과 동일하게 설정
                 .stock(entity.getStock()) // 재고 정보 추가
+                .detailFile(detailFile)
+                .detailFileType(entity.getDetailFileType())
                 .build();
     }
     
@@ -84,5 +87,20 @@ public class ProductService {
             default:
                 return "https://picsum.photos/500/500?random=4";
         }
+    }
+    
+    private String getDetailFile(ProductEntity entity) {
+        // 1. detailFileUrl이 있는 경우
+        if (entity.getDetailFileUrl() != null && !entity.getDetailFileUrl().trim().isEmpty()) {
+            return entity.getDetailFileUrl();
+        }
+        
+        // 2. detailFileData가 있는 경우 (Base64 데이터)
+        if (entity.getDetailFileData() != null && !entity.getDetailFileData().trim().isEmpty()) {
+            return entity.getDetailFileData();
+        }
+        
+        // 3. 상세정보 파일이 없는 경우
+        return null;
     }
 }
