@@ -250,11 +250,8 @@ public class RoutineService {
 		UsersEntity userEntity = usersRepository.findByEmail(authEmail).orElseThrow(()->new IllegalArgumentException("유효하지 않은 사용자입니다"));
 		RoutineEntity routineEntity = routineRepository.findByUsersIdAndSetId(userEntity.getUsersId(),setId).orElseThrow(()-> new IllegalArgumentException("루틴을 찾을 수 없습니다"));
 		
-		// 루틴 삭제 전에 관련된 RoutineEndTotal (완료 기록) 먼저 삭제
-		List<RoutineEndTotalEntity> routineEndTotals = routineEndTotalRepository.findAllBySetId(setId);
-		if (!routineEndTotals.isEmpty()) {
-			routineEndTotalRepository.deleteAll(routineEndTotals);
-		}
+		// 운동 완료 기록은 보존하고 루틴만 삭제
+		// RoutineEndTotal은 삭제하지 않음 (연속달성, 운동시간 등 통계 데이터 보존)
 		
 		routineRepository.delete(routineEntity);
 		return RoutineDto.toDto(routineEntity);
