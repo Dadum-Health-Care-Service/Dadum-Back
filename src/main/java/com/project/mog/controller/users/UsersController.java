@@ -363,7 +363,7 @@ public class UsersController {
 		List<UsersEntity> usersEntities = usersService.getUsersByRole("SUPER_ADMIN");
 		UsersEntity adminUser = usersEntities.get(0);
 		String adminToken = adminUser.getAuth().getWebPushToken();
-		firebaseService.sendNotification(adminToken, "새로운 권한 요청", authEmail + " 님이 " + "새 권한을 요청했습니다.");
+		firebaseService.sendNotification(adminToken, "새로운 권한 요청(백엔드)", authEmail + " 님이 " + "새 권한을 요청했습니다.");
 		return ResponseEntity.status(HttpStatus.OK).body(roleAssignmentDto);
 	}
 
