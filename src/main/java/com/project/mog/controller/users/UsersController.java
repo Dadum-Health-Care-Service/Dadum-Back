@@ -194,6 +194,17 @@ public class UsersController {
 		return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
 	}
 	
+	@GetMapping("/restore/{email}")
+	@Operation(summary = "이메일로 사용자 활성화(복구)", description = "이메일로 사용자를 활성화시켜 계정을 복구합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "복구 성공"),
+		@ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+	})
+	public ResponseEntity<UsersInfoDto> restoreUser(@Parameter(description = "이메일 주소", example = "test@test.com") @PathVariable String email){
+		UsersInfoDto restoredUser = usersService.activateUser(email);
+		return ResponseEntity.status(HttpStatus.OK).body(restoredUser);
+	}
+	
 	@PostMapping("auth/email/find")
 	@Operation(summary = "이메일 찾기", description = "이름과 전화번호로 이메일을 찾습니다.")
 	@ApiResponses({

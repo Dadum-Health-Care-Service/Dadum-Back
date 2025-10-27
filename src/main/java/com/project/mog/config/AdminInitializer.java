@@ -54,6 +54,7 @@ public class AdminInitializer implements CommandLineRunner {
                         .nickName("admin")
                         .email("admin@dadum.com")
                         .phoneNum("01000000000")
+                        .isActive(1L)
                         .build();
                 
                 RoleAssignmentEntity roleAssignment = RoleAssignmentEntity.builder()
@@ -62,8 +63,8 @@ public class AdminInitializer implements CommandLineRunner {
                         .assignedAt(LocalDateTime.now())
                         .expiredAt(LocalDateTime.now().plusDays(30))
                         .build();
-                roleAssignment.setUser(adminUser);
-                adminUser.getRoleAssignments().add(roleAssignment);
+
+                adminUser.addRoleAssignment(roleAssignment);
                 
                 // AuthEntity 생성 (비밀번호 설정 - 평문)
                 AuthEntity adminAuth = new AuthEntity();
@@ -74,6 +75,7 @@ public class AdminInitializer implements CommandLineRunner {
                 adminAuth.setUser(adminUser);
                 // AuthEntity를 먼저 저장
                 authRepository.save(adminAuth);
+                usersRepository.save(adminUser);
                 
                 log.info("Super Admin 계정이 생성되었습니다: admin@dadum.com / admin1234");
 

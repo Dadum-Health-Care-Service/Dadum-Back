@@ -44,6 +44,8 @@ public class UsersDto {
 	@Schema(description = "phoneNum", example="01012345678")
 	private String phoneNum;
 	@Schema(hidden = true)
+	private Long isActive;
+	@Schema(hidden = true)
 	private LocalDateTime regDate;
 	@Schema(hidden = true)
 	private LocalDateTime updateDate;
@@ -56,6 +58,7 @@ public class UsersDto {
 					.email(email)
 					.profileImg(profileImg)
 					.phoneNum(phoneNum)
+					.isActive(isActive)
 					.regDate(regDate) 
 					.updateDate(updateDate) 
 					.bios(Optional.ofNullable(biosDto).map(BiosDto::toEntity).orElse(null))
@@ -87,6 +90,7 @@ public class UsersDto {
 				.email(uEntity.getEmail())
 				.profileImg(uEntity.getProfileImg())
 				.phoneNum(uEntity.getPhoneNum())
+				.isActive(uEntity.getIsActive())
 				.roleAssignments(RoleAssignmentDto.toDto(uEntity.getRoleAssignments()))
 				.regDate(uEntity.getRegDate())
 				.updateDate(uEntity.getUpdateDate())

@@ -10,6 +10,7 @@ import com.project.mog.repository.users.UsersEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -37,8 +38,8 @@ public class PaymentEntity {
     @Column(name = "PAYMENT_ID")
     private Long paymentId;
     
-    @ManyToOne
-    @JoinColumn(name = "USER_ID")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usersId", nullable = false)
     private UsersEntity user;
     
     @Column(name = "MERCHANT_UID", nullable = false, unique = true)
