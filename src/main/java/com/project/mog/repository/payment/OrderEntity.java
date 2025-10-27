@@ -10,6 +10,7 @@ import com.project.mog.repository.users.UsersEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,8 +39,8 @@ public class OrderEntity {
     @Column(name = "ORDER_ID")
     private Long orderId;
     
-    @ManyToOne
-    @JoinColumn(name = "USER_ID")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usersId", nullable = false)
     private UsersEntity user;
     
     @Column(name = "USER_ID", insertable = false, updatable = false)

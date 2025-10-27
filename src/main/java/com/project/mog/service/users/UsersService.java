@@ -99,10 +99,17 @@ public class UsersService {
 
 
 		public UsersDto createUser(UsersDto usersDto) {
-			UsersEntity isDuplicated = usersRepository.findByEmail(usersDto.getEmail()).orElse(null);
+			Optional<UsersEntity> optionalUser = usersRepository.findByEmail(usersDto.getEmail());
 			RolesEntity role = rolesRepository.findByRoleName("USER").orElse(null);
 			
-			if(isDuplicated!=null) throw new IllegalArgumentException("중복된 아이디입니다");
+			if(optionalUser.isPresent()) {
+				UsersEntity existingUser = optionalUser.get();
+				if(existingUser.getIsActive()==1L) {
+					throw new IllegalArgumentException("중복된 아이디입니다");
+				}else if(existingUser.getIsActive()==0L) {
+					throw new IllegalStateException("이미 탈퇴한 사용자입니다");
+				}
+			}
 
 			UsersEntity uEntity = usersDto.toEntity();
 
@@ -111,10 +118,9 @@ public class UsersService {
 					.assignedAt(LocalDateTime.now())
 					.expiredAt(LocalDateTime.now().plusDays(30))
 					.role(role)
-					.user(uEntity)
 					.build();
 
-			uEntity.getRoleAssignments().add(roleAssignment);
+			uEntity.addRoleAssignment(roleAssignment);
 			usersRepository.save(uEntity); // cascade로 RoleAssignment도 함께 저장
 
 			return UsersDto.toDto(uEntity);
@@ -127,7 +133,13 @@ public class UsersService {
 		}
 		
 		public UsersInfoDto getUserByEmail(String email) {
-			return usersRepository.findByEmail(email).map(uEntity->UsersInfoDto.toDto(uEntity)).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			UsersEntity usersEntity = usersRepository.findByEmail(email)
+					.orElseThrow(()-> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			if(usersEntity.getIsActive()==0L) {
+				throw new IllegalStateException("탈퇴한 사용자 입니다");
+			}
+			
+			return UsersInfoDto.toDto(usersEntity);
 		}
 
 	public UsersInfoDto deleteUser(Long usersId, String authEmail) {
@@ -148,12 +160,18 @@ public class UsersService {
 			if (currentUser.getRoleAssignments().stream().map(RoleAssignmentEntity::getRole).map(RolesEntity::getRoleName).collect(Collectors.toList()).contains("SUPER_ADMIN") && currentUser.getUsersId() == usersId) {
 				throw new AccessDeniedException("최고 관리자는 자기 자신을 삭제할 수 없습니다");
 			}
-
-			//user삭제 전 연결되어있는 데이터 먼저 삭제
-			healthConnectService.deleteHealthConnectDataByUsersId(usersId); //healthConnect삭제로 연결되어있는 heartRateData,StepData 함께 삭제
-			postService.deleteByUsersId(usersId); //post삭제로 연결되어있는 comment,like 함께 삭제
 			
-			usersRepository.deleteById(usersId);
+			// soft delete 구현 (비활성화 처리)
+			targetUser.setIsActive(0L);
+			usersRepository.save(targetUser);
+
+			// user를 삭제하는것이 아니기 때문에 기존 데이터는 그대로 유지
+			
+			//user삭제 전 연결되어있는 데이터 먼저 삭제
+			//healthConnectService.deleteHealthConnectDataByUsersId(usersId); //healthConnect삭제로 연결되어있는 heartRateData,StepData 함께 삭제
+			//postService.deleteByUsersId(usersId); //post삭제로 연결되어있는 comment,like 함께 삭제
+			//usersRepository.deleteById(usersId);
+			
 			return UsersInfoDto.toDto(targetUser);
 		}
 
@@ -181,6 +199,10 @@ public class UsersService {
 		// 1. 이메일로 사용자 찾기
 		UsersEntity usersEntity = usersRepository.findByEmail(request.getEmail())
 			.orElseThrow(() -> new IllegalArgumentException("올바르지 않은 아이디/비밀번호입니다"));
+		
+		if(usersEntity.getIsActive()==0L) {
+			throw new IllegalStateException("탈퇴한 사용자 입니다");
+		}
 		
 		System.out.println(usersEntity.getAuth().isPasswordless());
 		
@@ -219,6 +241,9 @@ public class UsersService {
 													.phoneNum(kakaoUser.getId().toString())
 													.build();
 					return createUser(UsersDto.toDto(newKakaoUser));
+				}
+				if(usersEntity.getIsActive()==0L) {
+					throw new IllegalStateException("탈퇴한 사용자 입니다");
 				}
 				return UsersDto.toDto(usersEntity);
 			}
@@ -290,6 +315,9 @@ public class UsersService {
 		public UsersDto loginPasswordless(String email, String passwordlessToken) throws NoSuchAlgorithmException {
 			UsersEntity usersEntity = usersRepository.findByEmail(email).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 			AuthEntity authEntity = authRepository.findByUser(usersEntity);
+			if(usersEntity.getIsActive()==0L) {
+				throw new IllegalStateException("탈퇴한 사용자 입니다");
+			}
 			
 			//패스워드리스 로그인 후 해쉬화한 패스워드리스토큰으로 재설정
 			MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -305,6 +333,22 @@ public class UsersService {
 			authEntity.setPasswordless(true);
 			
 			return UsersDto.toDto(usersEntity);
+		}
+		
+		public UsersInfoDto activateUser(String email) {
+			UsersEntity targetUser = usersRepository.findByEmail(email)
+					.orElseThrow(()-> new IllegalArgumentException("존재하지 않는 사용자 입니다"));
+			if(targetUser.getIsActive()==1L) {
+				throw new IllegalStateException("비활성화 되지 않은 사용자입니다");
+			}
+			if(targetUser.getIsActive()==0L) {
+				targetUser.setIsActive(1L);
+				usersRepository.save(targetUser);
+			} else {
+				throw new IllegalStateException("사용자 상태가 올바르지 않습니다");
+			}
+			
+			return UsersInfoDto.toDto(targetUser);
 		}
 
 		// ===== Home APIs =====

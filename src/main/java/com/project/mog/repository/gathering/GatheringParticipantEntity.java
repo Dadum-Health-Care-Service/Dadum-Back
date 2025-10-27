@@ -28,7 +28,7 @@ public class GatheringParticipantEntity {
     private GatheringEntity gathering;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "usersId", nullable = false)
     private UsersEntity user;
     
     @Enumerated(EnumType.STRING)

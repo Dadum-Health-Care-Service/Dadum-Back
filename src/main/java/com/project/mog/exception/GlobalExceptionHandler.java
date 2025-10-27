@@ -32,6 +32,12 @@ public class GlobalExceptionHandler {
 				.body("[403 Forbidden] 접근이 거부되었습니다 : "+ex.getMessage());
 	}
 	
+	@ExceptionHandler(IllegalStateException.class)
+	public ResponseEntity<String> handleIllegalState(IllegalStateException ex){
+		return ResponseEntity
+				.status(HttpStatus.NOT_ACCEPTABLE)
+				.body("[406 Not Acceptable] 서비스 이용 불가 : "+ex.getMessage());
+	}
 	
 	
 

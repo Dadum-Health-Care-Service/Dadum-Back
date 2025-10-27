@@ -44,13 +44,12 @@ public class RolesService {
             RolesEntity rolesEntity = rolesRepository.findByRoleName(roleRequestDto.getRoleName()).orElseThrow(() -> new IllegalArgumentException("해당 권한을 찾을 수 없습니다"));
             RoleAssignmentEntity roleAssignmentEntity = RoleAssignmentEntity.builder()
                     .role(rolesEntity)
-                    .user(usersEntity)
                     .isActive(0L)
                     .assignedAt(null)
                     .expiredAt(null)
                     .build();
             // 기존 역할에 새 역할 추가
-            usersEntity.getRoleAssignments().add(roleAssignmentEntity);
+            usersEntity.addRoleAssignment(roleAssignmentEntity);
             usersRepository.save(usersEntity);
         }
         return usersEntity.getRoleAssignments().stream().map(RoleAssignmentDto::toDto).collect(Collectors.toList());

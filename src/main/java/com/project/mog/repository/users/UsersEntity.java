@@ -59,15 +59,20 @@ public class UsersEntity {
 	
 	@Column(length=11,nullable=false)
 	private String phoneNum;
+	
+	@Column(nullable = false)
+	private Long isActive;
 
 	@Column(nullable=false,updatable = false)
 	private LocalDateTime regDate;
 	@Column(nullable=false)
 	private LocalDateTime updateDate;
+	
 	@PrePersist//영속화 되기전 아래 메소드 실행
 	public void setCreateDate() {
 		this.regDate= LocalDateTime.now();
 		this.updateDate=LocalDateTime.now();
+		this.isActive = 1L;
 	}
 	@PreUpdate//영속화 되기전 아래 메소드 실행
 	public void setUpdateDate() {
@@ -80,4 +85,9 @@ public class UsersEntity {
 	private AuthEntity auth;
 	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 	private final List<RoleAssignmentEntity> roleAssignments = new ArrayList<>();
+	
+	public void addRoleAssignment(RoleAssignmentEntity assignment) {
+		this.roleAssignments.add(assignment);
+		assignment.setUser(this);
+	}
 }
