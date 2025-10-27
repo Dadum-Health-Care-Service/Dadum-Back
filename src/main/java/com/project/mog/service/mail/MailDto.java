@@ -16,6 +16,4 @@ public class MailDto {
 	private String to;
 	private String title;
 	private String htmlContent;
-//	private String messageTitle;
-//	private String message;
 }
