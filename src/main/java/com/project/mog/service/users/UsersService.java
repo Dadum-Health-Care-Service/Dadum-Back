@@ -282,6 +282,7 @@ public class UsersService {
 			String tempPassword = generateTempPassword();
 			AuthEntity authEntity = user.getAuth();
 			authEntity.setPassword(tempPassword);
+			
 			return tempPassword;
 		}
 

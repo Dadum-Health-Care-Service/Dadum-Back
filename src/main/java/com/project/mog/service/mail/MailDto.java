@@ -15,6 +15,7 @@ public class MailDto {
 	private String from;
 	private String to;
 	private String title;
-	private String messageTitle;
-	private String message;
+	private String htmlContent;
+//	private String messageTitle;
+//	private String message;
 }
