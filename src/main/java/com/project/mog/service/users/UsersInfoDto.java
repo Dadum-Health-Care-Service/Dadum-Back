@@ -37,7 +37,7 @@ public class UsersInfoDto {
 	private String profileImg;
 	@Schema(description = "phoneNum", example="01012345678")
 	private String phoneNum;
-	@Schema(hidden = true)
+	@Schema(description = "isActive", example = "1")
 	private Long isActive;
 	private LocalDateTime regDate;
 	@Schema(hidden = true)
