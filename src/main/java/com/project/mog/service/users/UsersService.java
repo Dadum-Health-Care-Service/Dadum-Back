@@ -133,7 +133,13 @@ public class UsersService {
 		}
 		
 		public UsersInfoDto getUserByEmail(String email) {
-			return usersRepository.findByEmail(email).map(uEntity->UsersInfoDto.toDto(uEntity)).orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			UsersEntity usersEntity = usersRepository.findByEmail(email)
+					.orElseThrow(()-> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+			if(usersEntity.getIsActive()==0L) {
+				throw new IllegalStateException("탈퇴한 사용자 입니다");
+			}
+			
+			return UsersInfoDto.toDto(usersEntity);
 		}
 
 	public UsersInfoDto deleteUser(Long usersId, String authEmail) {
