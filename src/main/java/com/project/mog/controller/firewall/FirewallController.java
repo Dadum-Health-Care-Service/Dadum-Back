@@ -73,7 +73,7 @@ public class FirewallController {
     }
     
     /**
-     * 차단된 IP 목록 조회
+     * 차단된 IP 목록 조회 (기존 방식)
      */
     @GetMapping("/blocked-list")
     public ResponseEntity<Map<String, Object>> getBlockedIps() {
@@ -83,6 +83,25 @@ public class FirewallController {
             response.put("status", "success");
             response.put("blockedIps", blockedIps);
             response.put("count", blockedIps.size());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+    
+    /**
+     * 차단된 IP 상세 정보 조회 (새로운 방식 - reason과 차단시각 포함)
+     */
+    @GetMapping("/blocked-details")
+    public ResponseEntity<Map<String, Object>> getBlockedIpDetails() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            List<FirewallService.BlockedIpInfo> blockedDetails = firewallService.getBlockedIpDetails();
+            response.put("status", "success");
+            response.put("blockedDetails", blockedDetails);
+            response.put("count", blockedDetails.size());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("status", "error");
