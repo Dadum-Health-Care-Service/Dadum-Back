@@ -41,6 +41,12 @@ public class AuthEntity {
 	@Column(length=100,nullable=false)
 	private String password;
 	
+	@Column(name = "ISPASSWORDLESS", nullable = false, columnDefinition = "NUMBER(1) DEFAULT 0")
+	private boolean isPasswordless;
+	
+	@Column(length=1000,nullable=true)
+	private String webPushToken;
+	
 	@Column(nullable=false)
 	private LocalDateTime connectTime;
 	

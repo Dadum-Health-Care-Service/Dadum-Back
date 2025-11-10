@@ -14,22 +14,21 @@ import com.project.mog.service.users.UsersInfoDto;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
-import io.swagger.v3.oas.annotations.security.OAuthScope;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name="사용자 API", description="사용자 계정 관련 API 입니다")
 public interface UsersControllerDocs {
-	
+
 	@Operation(summary="전체 회원 조회",description="전체 회원 정보 조회 API")
 	public ResponseEntity<List<UsersInfoDto>> getAllUsers();
-	
+
 	@Operation(summary="단일 회원 조회 ", description="단일 회원 정보 조회 API")
 	@Parameter(description="usersId", name="usersId", required=true)
 	public ResponseEntity<UsersInfoDto> getUser(@PathVariable Long usersId);
-	
+
 	@Operation(summary="회원 가입", description="회원 가입 API")
 	public ResponseEntity<UsersDto> createUser(
 			@io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -64,11 +63,11 @@ public interface UsersControllerDocs {
 					examples= @ExampleObject(value="")
 					)
 	)@RequestBody UsersInfoDto usersInfoDto);
-	
+
 	@Operation(summary="회원 탈퇴", description="회원 탈퇴 API")
 	@Parameter(description="usersId", name="usersId", required=true)
 	public ResponseEntity<UsersInfoDto> deleteUser(@Parameter(hidden=true) @RequestHeader("Authorization") String authHeader, @PathVariable Long usersId);
-	
+
 	@Operation(summary="로그인", description="로그인 API")
 	public ResponseEntity<LoginResponse> login(@io.swagger.v3.oas.annotations.parameters.RequestBody(
 			content = @Content(
@@ -79,6 +78,6 @@ public interface UsersControllerDocs {
 							+ "}")
 					)
 	)@RequestBody LoginRequest request);
-		
-		
+
+
 }

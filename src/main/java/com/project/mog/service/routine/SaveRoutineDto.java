@@ -7,6 +7,7 @@ import com.project.mog.repository.routine.RoutineEntity;
 import com.project.mog.repository.routine.SaveRoutineEntity;
 import com.project.mog.repository.routine.SaveRoutineSetEntity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,22 +19,28 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Schema(description = "저장된 루틴 DTO")
 public class SaveRoutineDto {
+	@Schema(hidden = true)
 	private long srId;
 	private long exId;
 	private String srName;
 	private long reps;
+	@Schema(hidden = true)
 	private long setId;
 	private List<SaveRoutineSetDto> set;
 	
 	public SaveRoutineEntity toEntity(RoutineEntity rEntity) {
-		return SaveRoutineEntity.builder()
+		SaveRoutineEntity srEntity = SaveRoutineEntity.builder()
 				.exId(exId)
 				.srName(srName)
 				.reps(reps)
-				.saveRoutineSet(set.stream().map(srs->srs.toEntity()).toList())
 				.routine(rEntity)
 				.build();
+		List<SaveRoutineSetEntity> saveRoutineSets = set.stream().map(srs->srs.toEntity(srEntity)).toList();
+		srEntity.setSaveRoutineSet(saveRoutineSets);
+		
+		return srEntity;
 	}
 	
 	
@@ -45,7 +52,7 @@ public class SaveRoutineDto {
 	        .srId(srEntity.getSrId())
 	        .exId(srEntity.getExId())
 	        .srName(srEntity.getSrName())
-	        .set(SaveRoutineSetDto.toDtoList(srEntity.getSaveRoutineSet())) // 🔥 리스트 순서대로 변환
+	        .set(srEntity.getSaveRoutineSet().stream().map(srs->SaveRoutineSetDto.toDto(srs)).toList())
 	        .reps(srEntity.getReps())
 	        .setId(srEntity.getRoutine().getSetId())
 	        .build();

@@ -1,9 +1,12 @@
-	package com.project.mog.repository.users;
+package com.project.mog.repository.users;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.project.mog.repository.auth.AuthEntity;
 import com.project.mog.repository.bios.BiosEntity;
+import com.project.mog.repository.role.RoleAssignmentEntity;
 
 import jakarta.persistence.Basic;
 import jakarta.persistence.CascadeType;
@@ -14,6 +17,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -56,14 +60,19 @@ public class UsersEntity {
 	@Column(length=11,nullable=false)
 	private String phoneNum;
 	
+	@Column(nullable = false)
+	private Long isActive;
+
 	@Column(nullable=false,updatable = false)
 	private LocalDateTime regDate;
 	@Column(nullable=false)
 	private LocalDateTime updateDate;
+	
 	@PrePersist//영속화 되기전 아래 메소드 실행
 	public void setCreateDate() {
 		this.regDate= LocalDateTime.now();
 		this.updateDate=LocalDateTime.now();
+		this.isActive = 1L;
 	}
 	@PreUpdate//영속화 되기전 아래 메소드 실행
 	public void setUpdateDate() {
@@ -74,5 +83,11 @@ public class UsersEntity {
 	private BiosEntity bios;
 	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 	private AuthEntity auth;
-
+	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+	private final List<RoleAssignmentEntity> roleAssignments = new ArrayList<>();
+	
+	public void addRoleAssignment(RoleAssignmentEntity assignment) {
+		this.roleAssignments.add(assignment);
+		assignment.setUser(this);
+	}
 }

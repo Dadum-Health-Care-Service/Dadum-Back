@@ -1,57 +1,88 @@
 server: #디폴트 8080
-  port: 8080 
+  port: 8080
   servlet:
     session:
       timeout: 1800 #30분이 기본값
-  address: 127.0.0.1
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  address: 0.0.0.0
 spring:
   #messages.properties파일 위치 설정.기본값은 messages
-    messages:
-      basename: i18n/messages #src/main/resources 밑에 i18n폴더 생성후 messages.properties저장
+  messages:
+    basename: i18n/messages #src/main/resources 밑에 i18n폴더 생성후 messages.properties저장
+    encoding: UTF-8
   #정적자원의 디폴트 설정
-    mvc:
-      static-path-pattern: /** 
-    web:
-      resources:      
-        static-location: classpath:/static/ #정적자원의 물리적 위치
-        add-mappings: true #자동 매핑 활성화(true:기본값),비 활성화시(false) path-pattern 및 static-location등이 적용되지 않는다
+  mvc:
+    static-path-pattern: /**
+  web:
+    resources:
+      static-location: classpath:/static/ #정적자원의 물리적 위치
+      add-mappings: true #자동 매핑 활성화(true:기본값),비 활성화시(false) path-pattern 및 static-location등이 적용되지 않는다
   #데이타 베이스 연결을 위한 설정
-    datasource: #필수 설정
-      driver-class-name: oracle.jdbc.OracleDriver
-      url: jdbc:oracle:thin:@localhost:1521/XEPDB1
-      username: MOG_TEST
-      password: MOG_TEST
+  datasource: #필수 설정
+    driver-class-name: oracle.jdbc.OracleDriver
+    url: jdbc:oracle:thin:@localhost:1521/XEPDB1
+    username: MOG_TEST
+    password: MOG_TEST
   #스프링 부트의 디폴트 커넥션 풀인 Hikari 디폴트 설정.
   #https://github.com/brettwooldridge/HikariCP?tab=readme-ov-file#frequently-used
-      hikari: #선택 사항(스프링 부트는 hikari가 기본 CP다)
-        auto-commit: true     
-        connection-timeout: 30000
-        maximum-pool-size: 10 
+  hikari: #선택 사항(스프링 부트는 hikari가 기본 CP다)
+    auto-commit: true
+    connection-timeout: 30000
+    maximum-pool-size: 10
   #Spring Data JPA 설정
-    jpa:
+  jpa:
+    hibernate:
+      dialect: org.hibernate.dialect.Oracle12cDialect
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
+    properties:
       hibernate:
-        dialect: org.hibernate.dialect.Oracle12cDialect
-        ddl-auto: create
-        naming:
-          physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-      show-sql: true
-      properties:
-        hibernate:
-          format_sql: true
-          jdbc:
-            lob:
-              non_contextual_creation: true
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: "${GMAIL_USERNAME:}"
+    password: "${GMAIL_PASSWORD:}"
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.ssl.protocols: TLSv1.2
 
-    mail:
-      host: smtp.gmail.com
-      port: 587
-      username: mogmyowngym@gmail.com
-      password: bsbv jxtd keou wxvy
-      properties:
-        mail.smtp.auth: true
-        mail.smtp.starttls.enable: true
-        mail.smtp.ssl.protocols: TLSv1.2
-      
 jwttoken:
-  secret-key: Nf/vIRqt0/bKThqJ6tOy2M9tqJX+rJxGG9HrZgsBrT4=
+  secret-key: "${JWT_SECRET_KEY}"
 
+openai:
+  api:
+    key: "${OPENAI_API_KEY:}"
+    timeout: 30
+
+naver:
+  client:
+    id: urNDov_OB0TwAnHmw4Bc
+    secret: 9RJ1ihZqXP
+
+# AI 이상거래탐지 서비스 설정
+ai:
+  service:
+    url: http://localhost:9000
+    timeout: 30000
+
+firebase:
+  project-id: dadum-a2604
+  credentials-path: classpath:firebase-adminsdk.json
+
+logging:
+  level:
+    com.project.mog.controller.chatbot: DEBUG
+
+discord:
+  webhook:
+    url: "${DISCORD_WEBHOOK_URL:}"

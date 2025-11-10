@@ -7,6 +7,7 @@ import com.project.mog.repository.bios.BiosEntity;
 import com.project.mog.repository.users.UsersEntity;
 import com.project.mog.service.auth.AuthDto;
 import com.project.mog.service.bios.BiosDto;
+import com.project.mog.service.role.RoleAssignmentDto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Nullable;
@@ -22,7 +23,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class UsersInfoDto {
-	@Schema(description = "usersId",example="1")
+	@Schema(hidden = true)
 	private long usersId;
 	@Nullable
 	private BiosDto biosDto;
@@ -36,7 +37,10 @@ public class UsersInfoDto {
 	private String profileImg;
 	@Schema(description = "phoneNum", example="01012345678")
 	private String phoneNum;
+	@Schema(description = "isActive", example = "1")
+	private Long isActive;
 	private LocalDateTime regDate;
+	@Schema(hidden = true)
 	private LocalDateTime updateDate;
 	
 	
@@ -45,6 +49,7 @@ public class UsersInfoDto {
 		user.setNickName(nickName);
 		user.setProfileImg(profileImg);
 		user.setPhoneNum(phoneNum);
+		user.setIsActive(isActive);
 		user.setUpdateDate(LocalDateTime.now());
 		
 		if(biosDto!=null) {
@@ -65,6 +70,7 @@ public class UsersInfoDto {
 				.profileImg(user.getProfileImg())
 				.nickName(user.getNickName())
 				.phoneNum(user.getPhoneNum())
+				.isActive(user.getIsActive())
 				.regDate(user.getRegDate())
 				.updateDate(user.getUpdateDate())
 				.biosDto(BiosDto.toDto(user.getBios()))
@@ -78,6 +84,7 @@ public class UsersInfoDto {
 				.profileImg(user.getProfileImg())
 				.nickName(user.getNickName())
 				.phoneNum(user.getPhoneNum())
+				.isActive(user.getIsActive())
 				.regDate(user.getRegDate())
 				.updateDate(user.getUpdateDate())
 				.biosDto(BiosDto.toDto(user.getBios()))
